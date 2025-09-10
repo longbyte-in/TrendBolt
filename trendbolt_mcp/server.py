@@ -27,6 +27,7 @@ from typing import Any, Dict, List, Optional, Sequence
 from pathlib import Path
 
 from mcp.server import Server
+from mcp.server.stdio import stdio_server
 from mcp.types import (
     Tool, 
     TextContent, 
@@ -35,7 +36,6 @@ from mcp.types import (
     PromptMessage,
     PromptArgument
 )
-
 from .config import get_settings
 from .tools.reddit import get_trending
 from .tools.llm import generate_canvas_post
@@ -43,9 +43,14 @@ from .tools.canva import create_design
 from .tools.facebook import publish_photo
 
 
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize MCP server
+server = Server("trendbolt")
+
 
 @server.list_tools()
 async def list_tools() -> List[Tool]:
@@ -424,7 +429,23 @@ Make it visually appealing and aligned with the content tone."""
 async def main():
     """Run the MCP server."""
     logger.info("Starting TrendBolt MCP Server...")
-    await server.run()
+    try:
+        async with stdio_server() as (read_stream, write_stream):
+            logger.info("MCP server started, waiting for client connections...")
+            
+            # Create initialization options with server capabilities
+            init_options = server.create_initialization_options()
+            
+            await server.run(
+                read_stream,
+                write_stream,
+                init_options
+            )
+    except KeyboardInterrupt:
+        logger.info("MCP server stopped by user")
+    except Exception as e:
+        logger.error("MCP server error: %s", e)
+        raise
 
 
 if __name__ == "__main__":

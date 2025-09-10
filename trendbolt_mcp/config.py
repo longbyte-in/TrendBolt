@@ -27,8 +27,8 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
 
     # Canva Bridge
-    canva_bridge_base_url: str
-    canva_bridge_signing_secret: str
+    canva_bridge_base_url: str | None = None
+    canva_bridge_signing_secret: str | None = None
 
     # Azure Blob Storage (default)
     azure_storage_account: str | None = None
@@ -39,10 +39,10 @@ class Settings(BaseSettings):
     azure_client_secret: str | None = None
 
     # Facebook
-    facebook_app_id: str
-    facebook_app_secret: str
-    facebook_page_id: str
-    facebook_page_access_token: str
+    facebook_app_id: str | None = None
+    facebook_app_secret: str | None = None
+    facebook_page_id: str | None = None
+    facebook_page_access_token: str | None = None
 
     # App options
     log_level: str = "INFO"

@@ -31,6 +31,12 @@ def publish_photo(
     s = get_settings()
     pid = page_id or s.facebook_page_id
     token = access_token or s.facebook_page_access_token
+    
+    if not pid:
+        raise ValueError("Facebook page_id is required. Set FACEBOOK_PAGE_ID in environment or pass page_id parameter.")
+    if not token:
+        raise ValueError("Facebook access token is required. Set FACEBOOK_PAGE_ACCESS_TOKEN in environment or pass access_token parameter.")
+    
     url = f"https://graph.facebook.com/v19.0/{pid}/photos"
     data: dict[str, str] = {"caption": caption, "url": image_url, "access_token": token}
     if scheduled_publish_time is not None:

@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "trendbolt": {
+      "command": "/Users/ikan/Projects/TrendBolt/.venv/bin/python3",
+      "args": ["-m", "trendbolt_mcp.server"],
+      "cwd": "/Users/ikan/Projects/TrendBolt",
+      "env": {
+        "PYTHONPATH": "/Users/ikan/Projects/TrendBolt",
+        "REDDIT_CLIENT_ID": "LNGBg0R1553NllPePFcuPA",
+        "REDDIT_CLIENT_SECRET": "sxOALavCAsNzG1Sk_xCpwAqoBV94aw",
+        "REDDIT_USER_AGENT": "TrendBolt/1.0 by u/Tiny_Category905",
+        "AZURE_OPENAI_ENDPOINT": "https://hi-mf9j9smo-eastus2.cognitiveservices.azure.com/",
+        "AZURE_OPENAI_API_KEY": "4NCBtP2snQQLn8cFP0vGFYYcnrBMYLaHqzpqCZUk9nU3uUaMp2diJQQJ99BIACHYHv6XJ3w3AAAAACOGb2my",
+        "AZURE_OPENAI_DEPLOYMENT": "gpt-4o",
+        "CANVA_API_CLIENT_ID": "OC-AZkzYhgWX_GM",
+        "CANVA_API_CLIENT_SECRET": "cnvca74y3dvNAzuj-vAufUJg8H3nj0rHnIfmnvNCjl2FpPhc3ec790ef",
+        "CANVA_REDIRECT_URI": "https://d0ec209c3d1c.ngrok-free.app",
+        "CANVA_SCOPES": "design:content:read export:read"
+      }
+    }
+  }
+}

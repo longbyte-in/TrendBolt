@@ -36,6 +36,12 @@ def create_design(
     { asset_url, preview_url, design_id }.
     """
     settings = get_settings()
+    
+    if not settings.canva_bridge_base_url:
+        raise ValueError("Canva bridge base URL is required. Set CANVA_BRIDGE_BASE_URL in environment.")
+    if not settings.canva_bridge_signing_secret:
+        raise ValueError("Canva bridge signing secret is required. Set CANVA_BRIDGE_SIGNING_SECRET in environment.")
+    
     url = settings.canva_bridge_base_url.rstrip("/") + "/api/create_design"
     payload = {
         "template_id": template_id or settings.template_id,
