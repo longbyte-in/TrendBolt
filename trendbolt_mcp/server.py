@@ -14,10 +14,17 @@ from __future__ import annotations
 
 import sys
 
+from .config import get_settings
+
 
 def main() -> None:
     """Entry point for the TrendBolt MCP server (skeleton)."""
-    print("TrendBolt MCP server stub started. Tools will be implemented next.")
+    settings = get_settings()
+    print(
+        "TrendBolt MCP server stub started. Tools will be implemented next.\n"
+        f"LLM provider: {settings.llm_provider}\n"
+        f"Storage container: {settings.azure_storage_container}"
+    )
 
 
 if __name__ == "__main__":

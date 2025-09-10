@@ -7,7 +7,10 @@ name = "trendbolt-mcp"
 version = "0.1.0"
 description = "TrendBolt MCP server and tools"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "pydantic>=2.7",
+    "pydantic-settings>=2.4",
+]
 
 [tool.black]
 line-length = 100
