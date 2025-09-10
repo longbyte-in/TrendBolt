@@ -28,7 +28,7 @@ class AzureOpenAIClient:
         completion = self._client.chat.completions.create(
             model=self._deployment,
             messages=[
-                {"role": "system", "content": "You are a helpful social media copywriter."},
+                {"role": "system", "content": "You are an expert viral social media content creator who specializes in creating engaging, shareable posts that drive high engagement. You understand what makes content go viral and how to craft compelling narratives that resonate with audiences."},
                 {"role": "user", "content": prompt},
             ],
             temperature=0.7,
@@ -46,7 +46,7 @@ class OpenAIClient:
         completion = self._client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a helpful social media copywriter."},
+                {"role": "system", "content": "You are an expert viral social media content creator who specializes in creating engaging, shareable posts that drive high engagement. You understand what makes content go viral and how to craft compelling narratives that resonate with audiences."},
                 {"role": "user", "content": prompt},
             ],
             temperature=0.7,
@@ -60,15 +60,26 @@ def _build_prompt(topic: dict, brand: dict) -> str:
     voice = brand.get("voice", "concise, actionable")
     cta = brand.get("cta", "Follow TrendBolt")
     return (
-        "Given a trending topic, generate a JSON object with fields: caption, alt_text,"
-        " hashtags (array), design_brief (object with headline, subtext, cta, color_theme,"
-        " layout, image_guidance).\n"
-        f"Topic title: {title}\nLink: {url}\nVoice: {voice}\nCTA: {cta}\n"
-        "Constraints: caption <= 2200 chars, avoid clickbait, include 2-5 relevant hashtags.\n"
-        "Color theme one of: dark_on_light, light_on_dark. Layout one of: "
-        "headline_top_subtext_center_cta_bottom.\n"
-        "Return ONLY JSON."
-    )
+        "You are a viral social media content creator specializing in engaging Canva posts. "
+        "Create compelling content that drives engagement and shares.\n\n"
+        "TOPIC: {title}\n"
+        "SOURCE: {url}\n"
+        "BRAND VOICE: {voice}\n"
+        "CALL TO ACTION: {cta}\n\n"
+        "Generate a JSON object with these fields:\n"
+        "- caption: Engaging social media caption (max 2200 chars) that hooks readers, explains the topic clearly, and encourages interaction\n"
+        "- alt_text: Descriptive alt text for accessibility (max 125 chars)\n"
+        "- hashtags: Array of 3-5 relevant hashtags (mix of trending and niche)\n"
+        "- design_brief: Object with:\n"
+        "  * headline: Eye-catching main title (max 60 chars)\n"
+        "  * subtext: Compelling subtitle that adds context (max 120 chars)\n"
+        "  * cta: Clear call-to-action button text (max 20 chars)\n"
+        "  * color_theme: Choose 'dark_on_light' or 'light_on_dark'\n"
+        "  * layout: Use 'headline_top_subtext_center_cta_bottom'\n"
+        "  * image_guidance: Specific visual suggestions (icons, colors, style)\n\n"
+        "Make it engaging, informative, and shareable. Avoid clickbait but make it compelling.\n"
+        "Return ONLY valid JSON."
+    ).format(title=title, url=url, voice=voice, cta=cta)
 
 
 def _choose_client_from_settings() -> LLMClient | None:

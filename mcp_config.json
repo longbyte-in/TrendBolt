@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "trendbolt": {
+      "command": "trendbolt",
+      "args": ["mcp", "--host", "127.0.0.1", "--port", "8765"],
+      "env": {
+        "REDDIT_CLIENT_ID": "your_reddit_client_id",
+        "REDDIT_CLIENT_SECRET": "your_reddit_client_secret", 
+        "REDDIT_USER_AGENT": "TrendBolt/1.0 by your_username",
+        "AZURE_OPENAI_ENDPOINT": "https://your-resource.openai.azure.com/",
+        "AZURE_OPENAI_API_KEY": "your_azure_openai_key",
+        "AZURE_OPENAI_DEPLOYMENT": "gpt-4o"
+      }
+    }
+  }
+}

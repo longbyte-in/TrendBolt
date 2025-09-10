@@ -1,114 +1,311 @@
-# TrendBolt
-![CI](https://github.com/YOUR_GITHUB_ORG/TREND_BOLT_REPO/actions/workflows/ci.yml/badge.svg)
-Turn trending topics into scroll-stopping content — instantly. AI-powered pipeline that discovers viral conversations on Reddit, generates on-brand copy with GPT, designs a Canva post, and publishes to Facebook.
+# TrendBolt MCP Server
 
-## What it does
-- Fetches trending Reddit topics
-- Generates a caption + design brief via LLM (Azure OpenAI gpt-4o or OpenAI fallback)
-- Creates a Facebook-fit visual (default 1080×1080) using Canva (Connect + Apps SDK bridge)
-- Publishes the image and caption to a Facebook Page via Graph API
+A Model Context Protocol (MCP) server for automated social media content creation. TrendBolt discovers trending topics on Reddit, generates engaging content using LLM, creates designs with Canva, and publishes to Facebook.
 
-See `DESIGN.md` for the detailed architecture and API choices.
+## 🚀 Features
 
-Canva bridge setup and template mapping: see `BRIDGE.md`.
+### **Tools**
+- **`reddit_get_trending`** - Fetch trending posts from Reddit subreddits
+- **`llm_generate_content`** - Generate viral social media content using LLM
+- **`canva_create_design`** - Create designs in Canva with custom briefs
+- **`facebook_publish_post`** - Publish posts to Facebook pages
+- **`trendbolt_pipeline`** - Run complete automation pipeline
 
-## Quickstart (end-to-end)
+### **Resources**
+- **`trendbolt://trending-topics`** - Current trending topics from Reddit
+- **`trendbolt://content-templates`** - Pre-built content generation templates
+- **`trendbolt://design-assets`** - Generated design assets and exports
 
-This section describes how an end user will run TrendBolt once the MCP server and tools are implemented.
+### **Prompts**
+- **`generate_viral_content`** - Generate viral social media content from trending topics
+- **`create_design_brief`** - Create design briefs for Canva
 
-### 1) Prerequisites
+## 📋 Prerequisites
+
 - Python 3.11+
-- Accounts/credentials:
-  - Reddit API app (client id/secret)
-  - Azure OpenAI (gpt-4o deployment) OR OpenAI API key
-  - Azure Storage account (Blob) and a container for exported images
-  - Facebook Page + Meta App with a Page Access Token
-  - Canva developer app: enable Connect APIs and an Apps SDK bridge for design editing/export
+- Reddit API credentials
+- Azure OpenAI or OpenAI API key
+- Canva API credentials (optional)
+- Facebook Page Access Token (optional)
 
-### 2) Environment variables
-Create a `.env` file in the project root (or set these in your environment):
-
-```env
-# Reddit
-REDDIT_CLIENT_ID=...
-REDDIT_CLIENT_SECRET=...
-REDDIT_USER_AGENT=TrendBolt/1.0 by your_handle
-
-# LLM (choose Azure OpenAI or OpenAI fallback)
-AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
-AZURE_OPENAI_API_KEY=...
-AZURE_OPENAI_DEPLOYMENT=gpt-4o
-# OPENAI_API_KEY=...
-
-# Canva bridge
-CANVA_BRIDGE_BASE_URL=https://your-canva-bridge.example.com
-CANVA_BRIDGE_SIGNING_SECRET=...
-
-# Azure Blob Storage (default storage)
-AZURE_STORAGE_ACCOUNT=youraccount
-AZURE_STORAGE_CONTAINER=posts
-# Option A: Connection string
-AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net
-# Option B: AAD credentials (service principal)
-# AZURE_TENANT_ID=...
-# AZURE_CLIENT_ID=...
-# AZURE_CLIENT_SECRET=...
-
-# Facebook
-FACEBOOK_APP_ID=...
-FACEBOOK_APP_SECRET=...
-FACEBOOK_PAGE_ID=...
-FACEBOOK_PAGE_ACCESS_TOKEN=...
-```
-
-### 3) Install & run
-
-Once the codebase is scaffolded, install dependencies and run either the one-shot CLI or the MCP server.
+## 🛠️ Installation
 
 ```bash
-# Create venv and install
-python -m venv .venv && source .venv/bin/activate
+# Clone repository
+git clone <repository-url>
+cd TrendBolt
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
 pip install -e .[dev]
-
-# Option A: One-shot pipeline (fetch → generate → design → post)
-trendbolt pipeline run \
-  --subreddits technology,worldnews \
-  --limit 20 \
-  --min-score 200 \
-  --template-id trendbolt_template_default \
-  --facebook-page-id "$FACEBOOK_PAGE_ID"
-
-# Option B: Start MCP server and use tools from an MCP-compatible client
-trendbolt mcp serve --host 127.0.0.1 --port 8765
 ```
 
-Note: Replace the CI badge link above with your actual GitHub org/repo path.
+## ⚙️ Configuration
 
-### 4) Typical flow
-1. Trend selection: Pulls top/hot Reddit posts and ranks them
-2. Copy generation: LLM returns caption, alt text, hashtags, and design brief
-3. Design creation: Canva bridge applies the brief to a default template and exports 1080×1080 PNG to Azure Blob (SAS URL)
-4. Publish: Facebook Graph API posts the image with the caption (optionally scheduled)
+Create a `.env` file in the project root:
 
-### 5) Scheduling
-You can schedule runs with cron or any scheduler. Example daily at 9am:
+```env
+# Reddit API
+REDDIT_CLIENT_ID=your_reddit_client_id
+REDDIT_CLIENT_SECRET=your_reddit_client_secret
+REDDIT_USER_AGENT=TrendBolt/1.0 by your_username
 
-```cron
-0 9 * * * cd /path/to/TrendBolt && . .venv/bin/activate && trendbolt pipeline run --subreddits technology --limit 10 --min-score 200 >> trendbolt.log 2>&1
+# LLM (choose one)
+# Azure OpenAI (preferred)
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_API_KEY=your_azure_openai_key
+AZURE_OPENAI_DEPLOYMENT=gpt-4o
+
+# OpenAI (fallback)
+# OPENAI_API_KEY=your_openai_key
+
+# Canva Connect (optional)
+CANVA_API_CLIENT_ID=your_canva_client_id
+CANVA_API_CLIENT_SECRET=your_canva_client_secret
+CANVA_REDIRECT_URI=https://your-domain.com/callback
+CANVA_SCOPES=design:content:read export:read
+
+# Facebook (optional)
+FACEBOOK_APP_ID=your_facebook_app_id
+FACEBOOK_APP_SECRET=your_facebook_app_secret
+FACEBOOK_PAGE_ID=your_facebook_page_id
+FACEBOOK_PAGE_ACCESS_TOKEN=your_page_access_token
+
+# Azure Blob Storage (optional)
+AZURE_STORAGE_ACCOUNT=your_storage_account
+AZURE_STORAGE_CONTAINER=posts
+AZURE_STORAGE_CONNECTION_STRING=your_connection_string
 ```
 
-### 6) Permissions & reviews
-- Facebook: requires `pages_manage_posts` and a Page Access Token; production apps may need App Review.
-- Canva: using Connect APIs and an Apps SDK app may require Canva’s app review depending on distribution.
-- Reddit: follow API terms and rate limits.
+## 🚀 Usage
 
-### 7) Troubleshooting
-- 400/401 from Facebook: verify Page Access Token and required scopes.
-- Canva export not returning: ensure the bridge is reachable and the app has permissions to export.
-- Blob upload issues: check container name and SAS/credentials.
-- LLM errors: confirm model/deployment name and API endpoint.
+### **Start MCP Server**
 
-### 8) Roadmap
-- Multi-platform posting (Instagram, LinkedIn, X)
-- Multiple templates/aspect ratios (1:1, 4:5, 16:9) with auto-cropping
-- Analytics loop to learn from engagement and improve topic selection
+```bash
+# Start MCP server
+trendbolt mcp --host 127.0.0.1 --port 8765
+
+# Or run directly
+python -m trendbolt_mcp.server
+```
+
+### **Using with MCP Clients**
+
+Connect to the server using any MCP-compatible client (Claude Desktop, etc.):
+
+```json
+{
+  "mcpServers": {
+    "trendbolt": {
+      "command": "trendbolt",
+      "args": ["mcp", "--host", "127.0.0.1", "--port", "8765"]
+    }
+  }
+}
+```
+
+### **Tool Examples**
+
+#### **Get Trending Reddit Posts**
+```json
+{
+  "name": "reddit_get_trending",
+  "arguments": {
+    "subreddits": ["technology", "worldnews"],
+    "strategy": "hot",
+    "limit": 5,
+    "min_score": 200
+  }
+}
+```
+
+#### **Generate Content**
+```json
+{
+  "name": "llm_generate_content",
+  "arguments": {
+    "topic": {
+      "title": "AI Breakthrough Announced",
+      "url": "https://reddit.com/...",
+      "subreddit": "technology",
+      "score": 1250
+    },
+    "brand": {
+      "cta": "Learn More",
+      "voice": "engaging and informative"
+    }
+  }
+}
+```
+
+#### **Run Complete Pipeline**
+```json
+{
+  "name": "trendbolt_pipeline",
+  "arguments": {
+    "subreddits": ["technology"],
+    "facebook_page_id": "your_page_id",
+    "template_id": "trendbolt_template_default",
+    "min_score": 200
+  }
+}
+```
+
+### **Resource Access**
+
+#### **Get Trending Topics**
+```
+URI: trendbolt://trending-topics
+```
+
+#### **Get Content Templates**
+```
+URI: trendbolt://content-templates
+```
+
+### **Prompt Usage**
+
+#### **Generate Viral Content**
+```json
+{
+  "name": "generate_viral_content",
+  "arguments": {
+    "topic_title": "Amazing AI Breakthrough",
+    "topic_url": "https://reddit.com/...",
+    "brand_voice": "engaging and informative"
+  }
+}
+```
+
+## 🏗️ Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Reddit API    │───▶│   LLM Engine    │───▶│   Canva API     │
+│                 │    │  (Azure OpenAI)  │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  MCP Server     │    │  Content Gen    │    │  Design Export  │
+│                 │    │                 │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Facebook API   │    │  Azure Storage  │    │  MCP Client     │
+│                 │    │                 │    │  (Claude, etc.) │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+## 📁 Project Structure
+
+```
+trendbolt_mcp/
+├── __init__.py
+├── server.py              # Main MCP server
+├── cli.py                 # Command line interface
+├── config.py              # Configuration management
+├── pipeline.py            # End-to-end pipeline
+├── integrations/
+│   └── canva_connect.py   # Canva OAuth integration
+├── tools/
+│   ├── reddit.py          # Reddit API integration
+│   ├── llm.py             # LLM content generation
+│   ├── canva.py           # Canva design creation
+│   └── facebook.py        # Facebook publishing
+└── storage/
+    └── azure_blob.py      # Azure Blob Storage
+```
+
+## 🔧 Development
+
+### **Run Tests**
+```bash
+pytest tests/
+```
+
+### **Code Quality**
+```bash
+# Format code
+black trendbolt_mcp/
+
+# Lint code
+ruff trendbolt_mcp/
+
+# Type checking
+mypy trendbolt_mcp/
+```
+
+### **Add New Tools**
+
+1. Create tool function in `tools/` directory
+2. Add tool definition to `server.py` `list_tools()`
+3. Add tool handler to `call_tool()`
+4. Update documentation
+
+## 📚 API Reference
+
+### **Reddit Tool**
+- **Input**: subreddits, strategy, limit, min_score, time_filter
+- **Output**: Array of trending posts with metadata
+
+### **LLM Tool**
+- **Input**: topic object, brand configuration
+- **Output**: Generated content with caption, hashtags, design brief
+
+### **Canva Tool**
+- **Input**: template_id, design_brief, export settings
+- **Output**: Design creation result with asset URLs
+
+### **Facebook Tool**
+- **Input**: caption, image_url, page_id
+- **Output**: Post creation result with post ID
+
+## 🚨 Error Handling
+
+The server provides comprehensive error handling:
+- **Authentication errors**: Clear messages for missing credentials
+- **API errors**: Detailed error information from external APIs
+- **Validation errors**: Input validation with helpful messages
+- **Network errors**: Retry logic and timeout handling
+
+## 🔒 Security
+
+- **Environment variables**: All credentials stored securely
+- **Token management**: Automatic refresh and secure storage
+- **Input validation**: All inputs validated before processing
+- **Error sanitization**: Sensitive information not exposed in errors
+
+## 📈 Monitoring
+
+- **Structured logging**: JSON-formatted logs for easy parsing
+- **Error tracking**: Comprehensive error logging and reporting
+- **Performance metrics**: Tool execution time tracking
+- **Health checks**: Server health monitoring endpoints
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
+
+## 📄 License
+
+[Add your license information here]
+
+## 🆘 Support
+
+- **Documentation**: [Link to full documentation]
+- **Issues**: [GitHub Issues URL]
+- **Discussions**: [GitHub Discussions URL]
+- **Email**: [Support email]
+
+---
+
+**TrendBolt** - Turn trending topics into scroll-stopping content, instantly! 🚀

@@ -62,7 +62,6 @@ def create_design(
             "design_id": data.get("design_id"),
         }
     except httpx.HTTPError as e:
-        logger.warning("Canva bridge request failed: %s", e)
         raise
     finally:
         if owns_client:

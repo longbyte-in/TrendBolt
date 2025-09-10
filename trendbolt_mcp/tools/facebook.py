@@ -47,7 +47,6 @@ def publish_photo(
         # photos returns id; we can fetch permalink via feed or build URL if needed
         return {"post_id": js.get("post_id") or js.get("id"), "permalink_url": None}
     except httpx.HTTPError as e:
-        logger.warning("Facebook post failed: %s", e)
         raise
     finally:
         if owns:

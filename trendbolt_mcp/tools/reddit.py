@@ -7,7 +7,7 @@ credentials from app settings.
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Protocol
+from typing import Any, AsyncIterable, Protocol
 
 from ..config import get_settings
 
@@ -19,7 +19,7 @@ class RedditFetcher(Protocol):
         strategy: str,
         limit: int,
         time_filter: str,
-    ) -> Iterable[Any]:
+    ) -> AsyncIterable[Any]:
         ...
 
 
@@ -37,7 +37,7 @@ class AsyncPrawFetcher:
 
     async def fetch(
         self, subreddit: str, strategy: str, limit: int, time_filter: str
-    ) -> Iterable[Any]:
+    ) -> AsyncIterable[Any]:
         sr = await self._client.subreddit(subreddit, fetch=True)
         if strategy == "top":
             return sr.top(limit=limit, time_filter=time_filter)
@@ -84,7 +84,8 @@ async def get_trending(
     results: list[dict] = []
     for sub in subreddits:
         try:
-            async for post in client.fetch(sub, strategy, limit, time_filter):
+            posts = await client.fetch(sub, strategy, limit, time_filter)
+            async for post in posts:
                 shaped = _shape_post(post)
                 if shaped["score"] >= min_score:
                     results.append(shaped)
