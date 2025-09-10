@@ -31,6 +31,7 @@ References: [Canva Developers](https://www.canva.dev/), [Canva Connect APIs](htt
   - Async with `httpx`; schemas via `pydantic`.
 - **Canva App Bridge (Node/JS)**
   - Minimal service using Canva Apps SDK to map our design brief to a predefined template and export a PNG (1080×1080). Returns `asset_url`.
+  - See `BRIDGE.md` for endpoint contract, signing, and template mapping.
 - **Storage**
   - Default: Azure Blob Storage (public SAS URL for Facebook ingestion). Alternatives: S3/GCS if preferred.
 - **Scheduler**
