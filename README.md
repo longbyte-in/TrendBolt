@@ -1,4 +1,5 @@
 # TrendBolt
+![CI](https://github.com/YOUR_GITHUB_ORG/TREND_BOLT_REPO/actions/workflows/ci.yml/badge.svg)
 Turn trending topics into scroll-stopping content — instantly. AI-powered pipeline that discovers viral conversations on Reddit, generates on-brand copy with GPT, designs a Canva post, and publishes to Facebook.
 
 ## What it does
@@ -8,6 +9,8 @@ Turn trending topics into scroll-stopping content — instantly. AI-powered pipe
 - Publishes the image and caption to a Facebook Page via Graph API
 
 See `DESIGN.md` for the detailed architecture and API choices.
+
+Canva bridge setup and template mapping: see `BRIDGE.md`.
 
 ## Quickstart (end-to-end)
 
@@ -78,6 +81,8 @@ trendbolt pipeline run \
 # Option B: Start MCP server and use tools from an MCP-compatible client
 trendbolt mcp serve --host 127.0.0.1 --port 8765
 ```
+
+Note: Replace the CI badge link above with your actual GitHub org/repo path.
 
 ### 4) Typical flow
 1. Trend selection: Pulls top/hot Reddit posts and ranks them
