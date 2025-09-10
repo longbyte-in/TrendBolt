@@ -63,9 +63,9 @@ FACEBOOK_PAGE_ACCESS_TOKEN=...
 Once the codebase is scaffolded, install dependencies and run either the one-shot CLI or the MCP server.
 
 ```bash
-# Create venv and install (placeholder commands; final commands will be added with the code scaffold)
+# Create venv and install
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e .[dev]
 
 # Option A: One-shot pipeline (fetch → generate → design → post)
 trendbolt pipeline run \
