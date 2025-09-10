@@ -10,6 +10,8 @@ from typing import Any, Dict, Optional
 import httpx
 
 from ..config import get_settings
+from ..logging import get_logger
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 
 def _sign_payload(secret: str, body_bytes: bytes) -> str:
@@ -17,6 +19,10 @@ def _sign_payload(secret: str, body_bytes: bytes) -> str:
     return digest
 
 
+logger = get_logger(__name__)
+
+
+@retry(reraise=True, stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.5, max=4), retry=retry_if_exception_type(httpx.HTTPError))
 def create_design(
     template_id: str,
     design_brief: Dict[str, Any],
@@ -55,6 +61,9 @@ def create_design(
             "preview_url": data.get("preview_url"),
             "design_id": data.get("design_id"),
         }
+    except httpx.HTTPError as e:
+        logger.warning("Canva bridge request failed: %s", e)
+        raise
     finally:
         if owns_client:
             client.close()

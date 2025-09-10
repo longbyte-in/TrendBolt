@@ -7,8 +7,14 @@ from typing import Optional
 import httpx
 
 from ..config import get_settings
+from ..logging import get_logger
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 
+logger = get_logger(__name__)
+
+
+@retry(reraise=True, stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.5, max=4), retry=retry_if_exception_type(httpx.HTTPError))
 def publish_photo(
     caption: str,
     image_url: str,
@@ -40,6 +46,9 @@ def publish_photo(
         js = resp.json()
         # photos returns id; we can fetch permalink via feed or build URL if needed
         return {"post_id": js.get("post_id") or js.get("id"), "permalink_url": None}
+    except httpx.HTTPError as e:
+        logger.warning("Facebook post failed: %s", e)
+        raise
     finally:
         if owns:
             client.close()
