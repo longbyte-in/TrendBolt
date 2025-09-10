@@ -1,13 +1,47 @@
-"""Stub for facebook.publish_post tool implementation."""
+"""Facebook Graph API publishing helper."""
 
 from __future__ import annotations
 
+from typing import Optional
 
-def publish_post_stub(caption: str, image_url: str) -> dict:
-    """Return a placeholder publish response to unblock wiring."""
-    return {
-        "post_id": "123456789_987654321",
-        "permalink_url": "https://facebook.com/permalink/123456789_987654321",
-    }
+import httpx
+
+from ..config import get_settings
+
+
+def publish_photo(
+    caption: str,
+    image_url: str,
+    page_id: str | None = None,
+    access_token: str | None = None,
+    scheduled_publish_time: int | None = None,
+    timeout_seconds: float = 30.0,
+    client: Optional[httpx.Client] = None,
+) -> dict:
+    """Publish a photo to a Facebook Page using Graph API.
+
+    Docs: https://developers.facebook.com/docs/graph-api/reference/page/photos/
+    """
+    s = get_settings()
+    pid = page_id or s.facebook_page_id
+    token = access_token or s.facebook_page_access_token
+    url = f"https://graph.facebook.com/v19.0/{pid}/photos"
+    data: dict[str, str] = {"caption": caption, "url": image_url, "access_token": token}
+    if scheduled_publish_time is not None:
+        data["published"] = "false"
+        data["scheduled_publish_time"] = str(scheduled_publish_time)
+    owns = False
+    if client is None:
+        client = httpx.Client(timeout=timeout_seconds)
+        owns = True
+    try:
+        resp = client.post(url, data=data)
+        resp.raise_for_status()
+        js = resp.json()
+        # photos returns id; we can fetch permalink via feed or build URL if needed
+        return {"post_id": js.get("post_id") or js.get("id"), "permalink_url": None}
+    finally:
+        if owns:
+            client.close()
 
 
