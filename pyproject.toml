@@ -11,6 +11,8 @@ dependencies = [
     "pydantic>=2.7",
     "pydantic-settings>=2.4",
     "asyncpraw>=7.7",
+    "openai>=1.35",
+    "azure-storage-blob>=12.20",
 ]
 
 [tool.black]

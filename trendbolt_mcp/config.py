@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     azure_openai_endpoint: str | None = None
     azure_openai_api_key: str | None = None
     azure_openai_deployment: str | None = None
+    azure_openai_api_version: str | None = "2024-06-01"
     openai_api_key: str | None = None
 
     # Canva Bridge
