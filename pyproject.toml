@@ -16,6 +16,9 @@ dependencies = [
     "httpx>=0.27",
 ]
 
+[project.scripts]
+trendbolt = "trendbolt_mcp.cli:trendbolt"
+
 [tool.black]
 line-length = 100
 target-version = ["py311"]

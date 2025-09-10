@@ -13,11 +13,20 @@ async def run_once(
     subreddits: Sequence[str] | None = None,
     min_score: int | None = None,
     template_id: str | None = None,
+    strategy: str | None = None,
+    limit: int | None = None,
+    time_filter: str | None = None,
 ) -> dict:
     s = get_settings()
     subs = list(subreddits or s.subreddits)
     min_s = int(min_score if min_score is not None else s.min_score)
-    topics = await get_trending(subs, min_score=min_s)
+    topics = await get_trending(
+        subs,
+        strategy=strategy or "hot",
+        limit=limit or 20,
+        time_filter=time_filter or "day",
+        min_score=min_s,
+    )
     if not topics:
         return {"status": "no_topics"}
     topic = topics[0]
