@@ -60,25 +60,22 @@ def _build_prompt(topic: dict, brand: dict) -> str:
     voice = brand.get("voice", "concise, actionable")
     cta = brand.get("cta", "Follow TrendBolt")
     return (
-        "You are a viral social media content creator specializing in engaging Canva posts. "
-        "Create compelling content that drives engagement and shares.\n\n"
+        "You are a social media content creator. Respond with STRICT JSON ONLY, no prose, no markdown, no backticks.\n\n"
         "TOPIC: {title}\n"
         "SOURCE: {url}\n"
         "BRAND VOICE: {voice}\n"
         "CALL TO ACTION: {cta}\n\n"
-        "Generate a JSON object with these fields:\n"
-        "- caption: Engaging social media caption (max 2200 chars) that hooks readers, explains the topic clearly, and encourages interaction\n"
-        "- alt_text: Descriptive alt text for accessibility (max 125 chars)\n"
-        "- hashtags: Array of 3-5 relevant hashtags (mix of trending and niche)\n"
-        "- design_brief: Object with:\n"
-        "  * headline: Eye-catching main title (max 60 chars)\n"
-        "  * subtext: Compelling subtitle that adds context (max 120 chars)\n"
-        "  * cta: Clear call-to-action button text (max 20 chars)\n"
-        "  * color_theme: Choose 'dark_on_light' or 'light_on_dark'\n"
-        "  * layout: Use 'headline_top_subtext_center_cta_bottom'\n"
-        "  * image_guidance: Specific visual suggestions (icons, colors, style)\n\n"
-        "Make it engaging, informative, and shareable. Avoid clickbait but make it compelling.\n"
-        "Return ONLY valid JSON."
+        "Produce exactly this JSON (no extra keys):\n"
+        "{\n"
+        "  \"title\": string (<=100 chars),\n"
+        "  \"headline\": string (<=60 chars),\n"
+        "  \"description\": string (<=2200 chars; most of the content),\n"
+        "  \"image_available\": boolean\n"
+        "}\n\n"
+        "Hard constraints:\n"
+        "- Output must be valid JSON.\n"
+        "- Do NOT include any explanations, instructions, or narrative.\n"
+        "- Values must be concise data only."
     ).format(title=title, url=url, voice=voice, cta=cta)
 
 
@@ -97,7 +94,7 @@ def _choose_client_from_settings() -> LLMClient | None:
 
 
 def generate_canvas_post(topic: dict, brand: dict, client: LLMClient | None = None) -> dict:
-    """Generate caption + design brief via LLM and return structured dict.
+    """Generate title/headline/description/image_available via LLM and return structured dict.
 
     If no client is provided, choose based on settings (Azure preferred).
     The model is instructed to return JSON; we parse defensively.
@@ -110,17 +107,10 @@ def generate_canvas_post(topic: dict, brand: dict, client: LLMClient | None = No
         # Fallback deterministic stub if no keys configured
         title = topic.get("title", "Update")
         return {
-            "caption": f"Big news: {title}",
-            "alt_text": f"A graphic about {title}",
-            "hashtags": ["#TrendBolt"],
-            "design_brief": {
-                "headline": title,
-                "subtext": "Why it matters in 3 bullets ...",
-                "cta": brand.get("cta", "Follow TrendBolt"),
-                "color_theme": "dark_on_light",
-                "layout": "headline_top_subtext_center_cta_bottom",
-                "image_guidance": "abstract tech pattern",
-            },
+            "title": title,
+            "headline": title,
+            "description": f"Quick takeaways: {title}",
+            "image_available": False,
         }
 
     prompt = _build_prompt(topic, brand)
@@ -128,24 +118,17 @@ def generate_canvas_post(topic: dict, brand: dict, client: LLMClient | None = No
     try:
         data = json.loads(raw)
         # minimal validation
-        data.setdefault("hashtags", [])
-        data.setdefault("design_brief", {})
+        data.setdefault("headline", data.get("title", topic.get("title", "")))
+        data.setdefault("image_available", False)
         return data
     except Exception:
         # If model returns non-JSON, fallback to a simple shaped response
         title = topic.get("title", "Update")
         return {
-            "caption": raw.strip()[:2000] or f"Update: {title}",
-            "alt_text": f"A graphic about {title}",
-            "hashtags": ["#AI", "#TechTrends"],
-            "design_brief": {
-                "headline": title,
-                "subtext": "Key takeaways...",
-                "cta": brand.get("cta", "Follow TrendBolt"),
-                "color_theme": "dark_on_light",
-                "layout": "headline_top_subtext_center_cta_bottom",
-                "image_guidance": "abstract pattern",
-            },
+            "title": title,
+            "headline": title,
+            "description": raw.strip()[:2000] or f"Update: {title}",
+            "image_available": False,
         }
 
 

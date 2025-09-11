@@ -26,17 +26,11 @@ class Settings(BaseSettings):
     azure_openai_api_version: str | None = "2024-06-01"
     openai_api_key: str | None = None
 
-    # Canva Bridge
-    canva_bridge_base_url: str | None = None
-    canva_bridge_signing_secret: str | None = None
+    # Canva Connect (access token + default brand template)
+    canva_access_token: str | None = None
+    canva_brand_template_id: str | None = None
 
-    # Azure Blob Storage (default)
-    azure_storage_account: str | None = None
-    azure_storage_container: str | None = "posts"
-    azure_storage_connection_string: str | None = None
-    azure_tenant_id: str | None = None
-    azure_client_id: str | None = None
-    azure_client_secret: str | None = None
+    # Azure Blob Storage removed; images posted directly to Facebook
 
     # Facebook
     facebook_app_id: str | None = None

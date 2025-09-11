@@ -39,8 +39,16 @@ from mcp.types import (
 from .config import get_settings
 from .tools.reddit import get_trending
 from .tools.llm import generate_canvas_post
-from .tools.canva import create_design
-from .tools.facebook import publish_photo
+# from .tools.canva import create_design  # removed: legacy bridge
+from .tools.canva_connect import list_brand_templates as canva_list_brand_templates
+from .tools.canva_connect import (
+    get_brand_template_dataset as canva_get_brand_template_dataset,
+)
+from .tools.canva_connect import (
+    create_autofill_job as canva_create_autofill_job,
+    get_autofill_job as canva_get_autofill_job,
+)
+from .tools.facebook import publish_photo, create_feed_post
 
 
 
@@ -113,26 +121,51 @@ async def list_tools() -> List[Tool]:
             }
         ),
         Tool(
-            name="canva_create_design",
-            description="Create a design in Canva",
+            name="canva_list_brand_templates",
+            description="List Canva brand templates for the current user (requires access token)",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "template_id": {
-                        "type": "string",
-                        "description": "Canva template ID to use"
-                    },
-                    "design_brief": {
-                        "type": "object",
-                        "description": "Design brief with headline, subtext, etc."
-                    },
-                    "export": {
-                        "type": "object",
-                        "description": "Export configuration",
-                        "default": {"format": "PNG", "quality": "HIGH"}
-                    }
+                    "query": {"type": "string"},
+                    "ownership": {"type": "string", "enum": ["any", "owned", "shared"]},
+                    "sort_by": {"type": "string", "enum": ["relevance", "modified_descending", "modified_ascending", "title_descending", "title_ascending"]},
+                    "dataset": {"type": "string", "enum": ["any", "non_empty"]},
+                    "continuation": {"type": "string"}
+                }
+            }
+        ),
+        Tool(
+            name="canva_get_brand_template_dataset",
+            description="Get dataset definition for a Canva brand template",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "brand_template_id": {"type": "string", "description": "Brand template ID"}
                 },
-                "required": ["template_id", "design_brief"]
+                "required": ["brand_template_id"]
+            }
+        ),
+        Tool(
+            name="canva_create_autofill_job",
+            description="Create an autofill job for a brand template",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "brand_template_id": {"type": "string"},
+                    "data": {"type": "object", "description": "Autofill data mapping"}
+                },
+                "required": ["data"]
+            }
+        ),
+        Tool(
+            name="canva_get_autofill_job",
+            description="Get autofill job status and result",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "job_id": {"type": "string"}
+                },
+                "required": ["job_id"]
             }
         ),
         Tool(
@@ -155,6 +188,21 @@ async def list_tools() -> List[Tool]:
                     }
                 },
                 "required": ["caption", "image_url", "page_id"]
+            }
+        ),
+        Tool(
+            name="facebook_create_post",
+            description="Create a feed post on a Facebook Page",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "message": {"type": "string"},
+                    "link": {"type": "string"},
+                    "published": {"type": "boolean", "default": True},
+                    "scheduled_publish_time": {"type": "integer"},
+                    "page_id": {"type": "string"}
+                },
+                "required": ["message", "page_id"]
             }
         ),
         Tool(
@@ -209,11 +257,27 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
                 brand=arguments.get("brand", {"cta": "Follow TrendBolt"})
             )
             
-        elif name == "canva_create_design":
-            result = create_design(
-                template_id=arguments["template_id"],
-                design_brief=arguments["design_brief"],
-                export=arguments.get("export", {"format": "PNG", "quality": "HIGH"})
+        elif name == "canva_list_brand_templates":
+            result = canva_list_brand_templates(
+                query=arguments.get("query"),
+                ownership=arguments.get("ownership"),
+                sort_by=arguments.get("sort_by"),
+                dataset=arguments.get("dataset"),
+                continuation=arguments.get("continuation"),
+            )
+
+        elif name == "canva_get_brand_template_dataset":
+            result = canva_get_brand_template_dataset(
+                brand_template_id=arguments["brand_template_id"]
+            )
+        elif name == "canva_create_autofill_job":
+            result = canva_create_autofill_job(
+                data=arguments["data"],
+                brand_template_id=arguments.get("brand_template_id")
+            )
+        elif name == "canva_get_autofill_job":
+            result = canva_get_autofill_job(
+                job_id=arguments["job_id"]
             )
             
         elif name == "facebook_publish_post":
@@ -221,6 +285,14 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
                 caption=arguments["caption"],
                 image_url=arguments["image_url"],
                 page_id=arguments["page_id"]
+            )
+        elif name == "facebook_create_post":
+            result = create_feed_post(
+                message=arguments["message"],
+                link=arguments.get("link"),
+                published=arguments.get("published", True),
+                scheduled_publish_time=arguments.get("scheduled_publish_time"),
+                page_id=arguments["page_id"],
             )
             
         elif name == "trendbolt_pipeline":
@@ -238,21 +310,15 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
                     topic=topic,
                     brand={"cta": "Follow TrendBolt"}
                 )
-                design = create_design(
-                    template_id=arguments.get("template_id", "trendbolt_template_default"),
-                    design_brief=content["design_brief"]
-                )
-                post = publish_photo(
-                    caption=content["caption"],
-                    image_url=design["asset_url"],
-                    page_id=arguments["facebook_page_id"]
-                )
+                # Note: Canva creation via Connect API requires separate autofill job flow.
+                # Here we return content and allow caller to choose a brand template via tools.
+                post = {"status": "skipped", "reason": "design_creation_moved_to_canva_connect_flow"}
                 
                 result = {
                     "status": "success",
                     "topic": topic,
                     "content": content,
-                    "design": design,
+                    "design": None,
                     "post": post
                 }
         else:

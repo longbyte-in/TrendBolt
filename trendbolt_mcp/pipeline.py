@@ -5,7 +5,7 @@ from typing import Sequence
 from .config import get_settings
 from .tools.reddit import get_trending
 from .tools.llm import generate_canvas_post
-from .tools.canva import create_design
+from .tools.canva_connect import create_autofill_job, get_autofill_job
 from .tools.facebook import publish_photo
 
 
@@ -31,11 +31,37 @@ async def run_once(
         return {"status": "no_topics"}
     topic = topics[0]
     content = generate_canvas_post(topic=topic, brand={"cta": "Follow TrendBolt"})
-    design = create_design(
-        template_id=template_id or s.template_id,
-        design_brief=content["design_brief"],
-    )
-    post = publish_photo(caption=content["caption"], image_url=design["asset_url"])  # type: ignore[arg-type]
-    return {"status": "ok", "topic": topic, "content": content, "design": design, "post": post}
+    # Map content to autofill data; adjust keys per your brand template dataset
+    autofill_data = {
+        "title": {"type": "text", "text": content.get("title", "")},
+        "headline": {"type": "text", "text": content.get("headline", "")},
+        "description": {"type": "text", "text": content.get("description", "")},
+    }
+    job = create_autofill_job(data=autofill_data, brand_template_id=template_id or s.canva_brand_template_id)
+    job_id = job.get("job", {}).get("id")
+    design_result: dict | None = None
+    if job_id:
+        # Simple poll loop (caller may implement smarter polling externally)
+        for _ in range(10):
+            j = get_autofill_job(job_id)
+            status = j.get("job", {}).get("status")
+            if status == "success":
+                design_result = j["job"]["result"]["design"]
+                break
+            if status == "failed":
+                break
+        else:
+            status = "timeout"
+    else:
+        status = "no_job"
+
+    # Post to Facebook if thumbnail URL available
+    post = None
+    if design_result and design_result.get("thumbnail", {}).get("url"):
+        post = publish_photo(
+            caption=content.get("description", ""),
+            image_url=design_result["thumbnail"]["url"],
+        )
+    return {"status": status, "topic": topic, "content": content, "design": design_result, "post": post}
 
 
