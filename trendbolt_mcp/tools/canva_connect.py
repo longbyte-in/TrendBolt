@@ -172,10 +172,12 @@ def get_autofill_job(job_id: str, timeout_seconds: float = 30.0, client: Optiona
 def build_autofill_data(values: Dict[str, str], field_map: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """Build Canva autofill data structure from simple values and an optional field map.
 
-    - values: { source_key: text }
+    - values: { source_key: text_value }
     - field_map: { destination_dataset_key: source_key }
-
+    
     Returns: { destination_dataset_key: {"type": "text", "text": value} }
+    
+    Note: Images are excluded - send separately later if needed.
     """
     mapping = field_map or {k: k for k in values.keys()}
     data: Dict[str, Any] = {}
