@@ -45,8 +45,9 @@ from .tools.canva_connect import (
     get_brand_template_dataset as canva_get_brand_template_dataset,
 )
 from .tools.canva_connect import (
-    create_autofill_job as canva_create_autofill_job,
+    create_autofill_job_from_values as canva_create_autofill_job,
     get_autofill_job as canva_get_autofill_job,
+    build_autofill_data,
 )
 from .tools.facebook import publish_photo, create_feed_post
 
@@ -159,7 +160,7 @@ async def list_tools() -> List[Tool]:
                 "type": "object",
                 "properties": {
                     "brand_template_id": {"type": "string", "description": "Brand template ID (optional - uses CANVA_BRAND_TEMPLATE_ID from env if not provided)"},
-                    "data": {"type": "object", "description": "Autofill data mapping"}
+                    "data": {"type": "object", "description": "Autofill data mapping with simple key-value pairs (e.g., {\"title\": \"My Title\", \"headline\": \"My Headline\"})"}
                 },
                 "required": ["data"]
             }
@@ -292,8 +293,11 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
                 brand_template_id=arguments["brand_template_id"]
             )
         elif name == "canva_create_autofill_job":
+            # Use create_autofill_job_from_values which handles data formatting internally
+            raw_data = arguments["data"]
+            
             result = canva_create_autofill_job(
-                data=arguments["data"],
+                values=raw_data,
                 brand_template_id=arguments.get("brand_template_id")
             )
         elif name == "canva_get_autofill_job":
