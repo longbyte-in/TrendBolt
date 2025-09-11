@@ -48,6 +48,9 @@ from .tools.canva_connect import (
     create_autofill_job_from_values as canva_create_autofill_job,
     get_autofill_job as canva_get_autofill_job,
     build_autofill_data,
+    upload_image_from_url,
+    create_url_asset_upload_job,
+    get_asset_upload_job,
 )
 from .tools.facebook import publish_photo, create_feed_post
 
@@ -155,12 +158,12 @@ async def list_tools() -> List[Tool]:
         ),
         Tool(
             name="canva_create_autofill_job",
-            description="Create an autofill job for a brand template. Uses CANVA_BRAND_TEMPLATE_ID from environment if brand_template_id not provided.",
+            description="Create an autofill job for a brand template. Automatically uploads image URLs to Canva and includes them as assets. Uses CANVA_BRAND_TEMPLATE_ID from environment if brand_template_id not provided.",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "brand_template_id": {"type": "string", "description": "Brand template ID (optional - uses CANVA_BRAND_TEMPLATE_ID from env if not provided)"},
-                    "data": {"type": "object", "description": "Autofill data mapping with simple key-value pairs (e.g., {\"title\": \"My Title\", \"headline\": \"My Headline\"})"}
+                    "data": {"type": "object", "description": "Autofill data mapping with simple key-value pairs. Image URLs (ending in .jpg, .png, etc.) are automatically uploaded to Canva and converted to asset IDs."}
                 },
                 "required": ["data"]
             }
@@ -174,6 +177,41 @@ async def list_tools() -> List[Tool]:
                     "job_id": {"type": "string"}
                 },
                 "required": ["job_id"]
+            }
+        ),
+        Tool(
+            name="canva_upload_image",
+            description="Upload an image from URL to Canva and get asset ID",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "image_url": {"type": "string", "description": "URL of the image to upload"},
+                    "asset_name": {"type": "string", "description": "Name for the asset in Canva"}
+                },
+                "required": ["image_url", "asset_name"]
+            }
+        ),
+        Tool(
+            name="canva_get_asset_upload_job",
+            description="Get asset upload job status and result",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "job_id": {"type": "string"}
+                },
+                "required": ["job_id"]
+            }
+        ),
+        Tool(
+            name="canva_create_url_asset_upload_job",
+            description="Create an asset upload job from URL (more efficient than binary upload)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "image_url": {"type": "string", "description": "URL of the image to upload"},
+                    "asset_name": {"type": "string", "description": "Name for the asset in Canva"}
+                },
+                "required": ["image_url", "asset_name"]
             }
         ),
         Tool(
@@ -293,16 +331,59 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
                 brand_template_id=arguments["brand_template_id"]
             )
         elif name == "canva_create_autofill_job":
-            # Use create_autofill_job_from_values which handles data formatting internally
+            # Automatically handle image uploads and include in autofill data
             raw_data = arguments["data"]
             
+            # Check for image URLs and upload them automatically
+            processed_data = {}
+            image_fields = {}
+            
+            for key, value in raw_data.items():
+                if isinstance(value, str) and (value.startswith('http') and any(ext in value.lower() for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'])):
+                    # This looks like an image URL - upload it
+                    logger.info(f"Detected image URL for field '{key}': {value}")
+                    try:
+                        upload_result = upload_image_from_url(
+                            image_url=value,
+                            asset_name=f"Auto-uploaded {key}"
+                        )
+                        if upload_result["success"]:
+                            asset_id = upload_result["asset_id"]
+                            processed_data[key] = asset_id
+                            image_fields[key] = key  # Mark as image field
+                            logger.info(f"✅ Uploaded image for '{key}', asset ID: {asset_id}")
+                        else:
+                            logger.warning(f"❌ Failed to upload image for '{key}': {upload_result.get('error')}")
+                            processed_data[key] = value  # Keep original URL as fallback
+                    except Exception as e:
+                        logger.error(f"❌ Error uploading image for '{key}': {e}")
+                        processed_data[key] = value  # Keep original URL as fallback
+                else:
+                    # Regular text field
+                    processed_data[key] = value
+            
             result = canva_create_autofill_job(
-                values=raw_data,
+                values=processed_data,
+                image_fields=image_fields,
                 brand_template_id=arguments.get("brand_template_id")
             )
         elif name == "canva_get_autofill_job":
             result = canva_get_autofill_job(
                 job_id=arguments["job_id"]
+            )
+        elif name == "canva_upload_image":
+            result = upload_image_from_url(
+                image_url=arguments["image_url"],
+                asset_name=arguments["asset_name"]
+            )
+        elif name == "canva_get_asset_upload_job":
+            result = get_asset_upload_job(
+                job_id=arguments["job_id"]
+            )
+        elif name == "canva_create_url_asset_upload_job":
+            result = create_url_asset_upload_job(
+                image_url=arguments["image_url"],
+                asset_name=arguments["asset_name"]
             )
             
         elif name == "facebook_publish_post":

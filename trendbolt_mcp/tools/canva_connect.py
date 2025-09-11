@@ -192,38 +192,229 @@ def get_autofill_job(job_id: str, timeout_seconds: float = 30.0, client: Optiona
             client.close()
 
 
-def build_autofill_data(values: Dict[str, str], field_map: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
-    """Build Canva autofill data structure from simple values and an optional field map.
+def build_autofill_data(
+    values: Dict[str, Any], 
+    field_map: Optional[Dict[str, str]] = None,
+    image_fields: Optional[Dict[str, str]] = None
+) -> Dict[str, Any]:
+    """Build Canva autofill data structure from simple values and field mapping.
 
-    - values: { source_key: text_value }
-    - field_map: { destination_dataset_key: source_key }
+    Args:
+        values: Dictionary of field names to values (text or asset_id)
+        field_map: Optional mapping from source keys to destination keys
+        image_fields: Optional mapping of field names that should be treated as images
     
-    Returns: { destination_dataset_key: {"type": "text", "text": value} }
-    
-    Note: Images are excluded - send separately later if needed.
+    Returns:
+        Dictionary formatted for Canva autofill API:
+        - Text: {"field_name": {"type": "text", "text": "value"}}
+        - Image: {"field_name": {"type": "image", "asset_id": "asset_id"}}
     """
     mapping = field_map or {k: k for k in values.keys()}
+    image_fields = image_fields or {}
     data: Dict[str, Any] = {}
+    
     for dest_key, src_key in mapping.items():
-        text_value = values.get(src_key, "")
-        data[dest_key] = {"type": "text", "text": text_value}
+        value = values.get(src_key, "")
+        
+        if dest_key in image_fields and value:
+            # Handle as image asset
+            data[dest_key] = {"type": "image", "asset_id": value}
+        else:
+            # Handle as text
+            data[dest_key] = {"type": "text", "text": str(value)}
+    
     return data
 
 
 def create_autofill_job_from_values(
-    values: Dict[str, str],
+    values: Dict[str, Any],
     field_map: Optional[Dict[str, str]] = None,
+    image_fields: Optional[Dict[str, str]] = None,
     brand_template_id: Optional[str] = None,
     timeout_seconds: float = 30.0,
     client: Optional[httpx.Client] = None,
 ) -> dict:
-    """Convenience wrapper to create an autofill job from values + field map."""
-    data = build_autofill_data(values=values, field_map=field_map)
+    """Convenience wrapper to create an autofill job from values + field map.
+    
+    Args:
+        values: Dictionary of field names to values (text or asset_id)
+        field_map: Optional mapping from source keys to destination keys
+        image_fields: Optional mapping of field names that should be treated as images
+        brand_template_id: Canva brand template ID
+        timeout_seconds: Request timeout
+        client: Optional HTTP client
+    """
+    data = build_autofill_data(values=values, field_map=field_map, image_fields=image_fields)
     return create_autofill_job(
         data=data,
         brand_template_id=brand_template_id,
         timeout_seconds=timeout_seconds,
         client=client,
     )
+
+
+@retry(reraise=True, stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.5, max=4), retry=retry_if_exception_type(httpx.HTTPError))
+def create_url_asset_upload_job(
+    image_url: str,
+    asset_name: str,
+    timeout_seconds: float = 30.0,
+    client: Optional[httpx.Client] = None,
+) -> dict:
+    """Create an asset upload job to upload an image from URL to Canva.
+    
+    Docs: https://www.canva.dev/docs/connect/api-reference/assets/create-url-asset-upload-job/
+    """
+    from ..logging import get_logger
+    logger = get_logger(__name__)
+    
+    s = get_settings()
+    token = s.canva_access_token
+    if not token:
+        raise ValueError("Canva access token is required. Set CANVA_ACCESS_TOKEN in environment.")
+
+    url = "https://api.canva.com/rest/v1/url-asset-uploads"
+    
+    payload = {
+        "name": asset_name,
+        "url": image_url
+    }
+    
+    headers = {
+        **_auth_headers(token),
+        "Content-Type": "application/json"
+    }
+
+    logger.info(f"Creating URL asset upload job for: {asset_name}")
+    logger.info(f"Request URL: {url}")
+    logger.info(f"Image URL: {image_url}")
+
+    owns = False
+    if client is None:
+        client = httpx.Client(timeout=timeout_seconds)
+        owns = True
+    try:
+        resp = client.post(url, headers=headers, json=payload)
+        
+        logger.info(f"Response status: {resp.status_code}")
+        if resp.status_code != 200:
+            logger.error(f"Request failed with status {resp.status_code}")
+            logger.error(f"Response body: {resp.text}")
+        
+        resp.raise_for_status()
+        return resp.json()
+    finally:
+        if owns:
+            client.close()
+
+
+@retry(reraise=True, stop=stop_after_attempt(5), wait=wait_exponential(multiplier=0.5, max=8), retry=retry_if_exception_type(httpx.HTTPError))
+def get_asset_upload_job(job_id: str, timeout_seconds: float = 30.0, client: Optional[httpx.Client] = None) -> dict:
+    """Get the status and results of an asset upload job.
+    
+    Docs: https://www.canva.dev/docs/connect/api-reference/assets/get-asset-upload-job/
+    """
+    from ..logging import get_logger
+    logger = get_logger(__name__)
+    
+    s = get_settings()
+    token = s.canva_access_token
+    if not token:
+        raise ValueError("Canva access token is required. Set CANVA_ACCESS_TOKEN in environment.")
+
+    url = f"https://api.canva.com/rest/v1/asset-uploads/{job_id}"
+
+    owns = False
+    if client is None:
+        client = httpx.Client(timeout=timeout_seconds)
+        owns = True
+    try:
+        resp = client.get(url, headers=_auth_headers(token))
+        resp.raise_for_status()
+        return resp.json()
+    finally:
+        if owns:
+            client.close()
+
+
+def upload_image_from_url(
+    image_url: str,
+    asset_name: str,
+    timeout_seconds: float = 30.0,
+    client: Optional[httpx.Client] = None,
+) -> dict:
+    """Upload an image from URL to Canva and return the asset ID.
+    
+    This function:
+    1. Creates a URL asset upload job (no download needed!)
+    2. Polls until upload completes
+    3. Returns the asset ID
+    
+    Uses the more efficient URL-based upload API.
+    """
+    from ..logging import get_logger
+    logger = get_logger(__name__)
+    
+    logger.info(f"Uploading image from URL: {image_url}")
+    
+    owns = False
+    if client is None:
+        client = httpx.Client(timeout=timeout_seconds)
+        owns = True
+    
+    try:
+        # Create URL asset upload job (much simpler!)
+        logger.info("Creating URL asset upload job...")
+        upload_result = create_url_asset_upload_job(
+            image_url=image_url,
+            asset_name=asset_name,
+            timeout_seconds=timeout_seconds,
+            client=client
+        )
+        
+        job_id = upload_result["job"]["id"]
+        logger.info(f"Upload job created: {job_id}")
+        
+        # Poll for completion
+        import time
+        max_attempts = 30  # 5 minutes max
+        attempt = 0
+        
+        while attempt < max_attempts:
+            attempt += 1
+            logger.info(f"Checking upload status (attempt {attempt}/{max_attempts})...")
+            
+            job_result = get_asset_upload_job(job_id, timeout_seconds=timeout_seconds, client=client)
+            status = job_result["job"]["status"]
+            
+            if status == "success":
+                asset_id = job_result["job"]["asset"]["id"]
+                logger.info(f"✅ Upload successful! Asset ID: {asset_id}")
+                return {
+                    "success": True,
+                    "asset_id": asset_id,
+                    "asset": job_result["job"]["asset"]
+                }
+            elif status == "failed":
+                error = job_result["job"].get("error", {})
+                logger.error(f"❌ Upload failed: {error}")
+                return {
+                    "success": False,
+                    "error": error,
+                    "job_id": job_id
+                }
+            else:  # in_progress
+                logger.info(f"Upload still in progress...")
+                time.sleep(10)  # Wait 10 seconds before next check
+        
+        logger.error("❌ Upload timed out")
+        return {
+            "success": False,
+            "error": {"code": "timeout", "message": "Upload job timed out"},
+            "job_id": job_id
+        }
+        
+    finally:
+        if owns:
+            client.close()
 
 
