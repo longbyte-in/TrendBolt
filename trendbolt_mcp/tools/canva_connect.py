@@ -11,6 +11,7 @@ Docs:
 
 from __future__ import annotations
 
+import json
 from typing import Any, Dict, Optional
 
 import httpx
@@ -112,17 +113,25 @@ def create_autofill_job(
     client: Optional[httpx.Client] = None,
 ) -> dict:
     """Create an autofill job using a brand template and data mapping.
+    
+    Uses CANVA_ACCESS_TOKEN and CANVA_BRAND_TEMPLATE_ID from environment by default.
+    Parameters override environment variables when provided.
 
     Docs: https://www.canva.dev/docs/connect/api-reference/autofill/create-autofill-job/
     """
+    from ..logging import get_logger
+    logger = get_logger(__name__)
+    
     s = get_settings()
+    
+    # Use environment variables by default, parameters override
     token = s.canva_access_token
     if not token:
         raise ValueError("Canva access token is required. Set CANVA_ACCESS_TOKEN in environment.")
 
     tpl = brand_template_id or s.canva_brand_template_id
     if not tpl:
-        raise ValueError("brand_template_id is required. Set CANVA_BRAND_TEMPLATE_ID or pass param.")
+        raise ValueError("brand_template_id is required. Set CANVA_BRAND_TEMPLATE_ID in environment or pass brand_template_id parameter.")
 
     url = "https://api.canva.com/rest/v1/autofills"
     payload = {
@@ -130,12 +139,26 @@ def create_autofill_job(
         "data": data,
     }
 
+    # Log the request details
+    logger.info(f"Creating autofill job for brand template: {tpl}")
+    logger.info(f"Request URL: {url}")
+    logger.info(f"Request payload: {json.dumps(payload, indent=2)}")
+
     owns = False
     if client is None:
         client = httpx.Client(timeout=timeout_seconds)
         owns = True
     try:
         resp = client.post(url, headers={**_auth_headers(token), "Content-Type": "application/json"}, json=payload)
+        
+        # Log response details
+        logger.info(f"Response status: {resp.status_code}")
+        logger.info(f"Response headers: {dict(resp.headers)}")
+        
+        if resp.status_code != 200:
+            logger.error(f"Request failed with status {resp.status_code}")
+            logger.error(f"Response body: {resp.text}")
+        
         resp.raise_for_status()
         return resp.json()
     finally:

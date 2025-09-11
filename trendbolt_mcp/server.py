@@ -154,11 +154,11 @@ async def list_tools() -> List[Tool]:
         ),
         Tool(
             name="canva_create_autofill_job",
-            description="Create an autofill job for a brand template",
+            description="Create an autofill job for a brand template. Uses CANVA_BRAND_TEMPLATE_ID from environment if brand_template_id not provided.",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "brand_template_id": {"type": "string"},
+                    "brand_template_id": {"type": "string", "description": "Brand template ID (optional - uses CANVA_BRAND_TEMPLATE_ID from env if not provided)"},
                     "data": {"type": "object", "description": "Autofill data mapping"}
                 },
                 "required": ["data"]
