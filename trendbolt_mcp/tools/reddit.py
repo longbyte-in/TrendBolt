@@ -10,6 +10,9 @@ from __future__ import annotations
 from typing import Any, AsyncIterable, Protocol
 
 from ..config import get_settings
+from ..logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class RedditFetcher(Protocol):
@@ -60,6 +63,38 @@ def _shape_post(p: Any) -> dict:
         "num_comments": int(getattr(p, "num_comments", 0) or 0),
         "created_utc": float(getattr(p, "created_utc", 0.0) or 0.0),
     }
+
+
+async def get_post_by_id(post_id: str, timeout_seconds: float = 30.0) -> dict | None:
+    """Fetch a single Reddit post by its ID (e.g., t3_1ndjq1c)."""
+    import asyncpraw  # local import to keep import-time deps light
+    
+    s = get_settings()
+    if not s.reddit_client_id or not s.reddit_client_secret:
+        raise ValueError("Reddit credentials required. Set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET.")
+    
+    reddit = asyncpraw.Reddit(
+        client_id=s.reddit_client_id,
+        client_secret=s.reddit_client_secret,
+        user_agent=s.reddit_user_agent,
+    )
+    
+    try:
+        submission = await reddit.submission(id=post_id.replace('t3_', ''))
+        return {
+            "id": f"t3_{submission.id}",
+            "title": submission.title,
+            "url": submission.url,
+            "score": submission.score,
+            "subreddit": str(submission.subreddit),
+            "created_utc": submission.created_utc,
+            "selftext": submission.selftext[:500] if submission.selftext else "",
+        }
+    except Exception as e:
+        logger.error(f"Failed to fetch post {post_id}: {e}")
+        return None
+    finally:
+        await reddit.close()
 
 
 async def get_trending(

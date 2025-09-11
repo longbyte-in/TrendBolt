@@ -37,7 +37,7 @@ from mcp.types import (
     PromptArgument
 )
 from .config import get_settings
-from .tools.reddit import get_trending
+from .tools.reddit import get_trending, get_post_by_id
 from .tools.llm import generate_canvas_post
 # from .tools.canva import create_design  # removed: legacy bridge
 from .tools.canva_connect import list_brand_templates as canva_list_brand_templates
@@ -111,13 +111,20 @@ async def list_tools() -> List[Tool]:
                         "type": "object",
                         "description": "Reddit topic object with title, url, etc."
                     },
+                    "reddit_post_id": {
+                        "type": "string",
+                        "description": "Reddit post ID (e.g., t3_1ndjq1c) - will fetch post details"
+                    },
                     "brand": {
                         "type": "object",
                         "description": "Brand configuration",
                         "default": {"cta": "Follow TrendBolt", "voice": "engaging"}
                     }
                 },
-                "required": ["topic"]
+                "anyOf": [
+                    {"required": ["topic"]},
+                    {"required": ["reddit_post_id"]}
+                ]
             }
         ),
         Tool(
@@ -252,10 +259,24 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
             )
             
         elif name == "llm_generate_content":
-            result = generate_canvas_post(
-                topic=arguments["topic"],
-                brand=arguments.get("brand", {"cta": "Follow TrendBolt"})
-            )
+            # Handle both topic object and reddit_post_id
+            if "reddit_post_id" in arguments:
+                # Fetch Reddit post details by ID
+                reddit_post_id = arguments["reddit_post_id"]
+                topic = await get_post_by_id(reddit_post_id)
+                if not topic:
+                    result = {"error": f"Could not fetch Reddit post {reddit_post_id}"}
+                else:
+                    result = generate_canvas_post(
+                        topic=topic,
+                        brand=arguments.get("brand", {"cta": "Follow TrendBolt"})
+                    )
+            else:
+                topic = arguments["topic"]
+                result = generate_canvas_post(
+                    topic=topic,
+                    brand=arguments.get("brand", {"cta": "Follow TrendBolt"})
+                )
             
         elif name == "canva_list_brand_templates":
             result = canva_list_brand_templates(
