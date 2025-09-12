@@ -215,25 +215,66 @@ async def list_tools() -> List[Tool]:
             }
         ),
         Tool(
-            name="facebook_publish_post",
-            description="Publish a post to Facebook",
+            name="facebook_publish_photo",
+            description="Publish a photo to Facebook Page using URL from Canva. Uses Facebook Graph API v23.0 with URL-based photo upload.",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "caption": {
-                        "type": "string",
-                        "description": "Post caption text"
-                    },
                     "image_url": {
                         "type": "string",
-                        "description": "URL of image to post"
+                        "description": "URL of the image to upload (typically from Canva thumbnail)"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Text message to accompany the photo (optional)"
+                    },
+                    "published": {
+                        "type": "boolean",
+                        "description": "Whether to publish immediately (default: true)",
+                        "default": True
                     },
                     "page_id": {
                         "type": "string",
-                        "description": "Facebook page ID"
+                        "description": "Facebook Page ID (optional - uses FACEBOOK_PAGE_ID from env if not provided)"
+                    },
+                    "scheduled_publish_time": {
+                        "type": "integer",
+                        "description": "Unix timestamp for scheduled posts (requires published=false)"
                     }
                 },
-                "required": ["caption", "image_url", "page_id"]
+                "required": ["image_url"]
+            }
+        ),
+        Tool(
+            name="facebook_publish_multi_photo",
+            description="Publish a multi-photo post to Facebook Page. Uploads multiple images and creates a single post with attached media.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "Text message for the post"
+                    },
+                    "image_urls": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of image URLs to upload"
+                    },
+                    "published": {
+                        "type": "boolean",
+                        "description": "Whether to publish immediately (default: true)",
+                        "default": True
+                    },
+                    "page_id": {
+                        "type": "string",
+                        "description": "Facebook Page ID (optional - uses FACEBOOK_PAGE_ID from env if not provided)"
+                    },
+                    "scheduled_publish_time": {
+                        "type": "integer",
+                        "description": "Unix timestamp for scheduled posts (requires published=false)"
+                    }
+                },
+                "required": ["message", "image_urls"]
             }
         ),
         Tool(
@@ -331,7 +372,7 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
                 brand_template_id=arguments["brand_template_id"]
             )
         elif name == "canva_create_autofill_job":
-            # Automatically handle image uploads and include in autofill data
+            # Automatically handle image uploads and include in autofill datagst
             raw_data = arguments["data"]
             
             # Check for image URLs and upload them automatically
@@ -386,11 +427,21 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
                 asset_name=arguments["asset_name"]
             )
             
-        elif name == "facebook_publish_post":
+        elif name == "facebook_publish_photo":
             result = publish_photo(
-                caption=arguments["caption"],
                 image_url=arguments["image_url"],
-                page_id=arguments["page_id"]
+                message=arguments.get("message"),
+                published=arguments.get("published", True),
+                page_id=arguments.get("page_id"),
+                scheduled_publish_time=arguments.get("scheduled_publish_time")
+            )
+        elif name == "facebook_publish_multi_photo":
+            result = publish_multi_photo_post(
+                message=arguments["message"],
+                image_urls=arguments["image_urls"],
+                published=arguments.get("published", True),
+                page_id=arguments.get("page_id"),
+                scheduled_publish_time=arguments.get("scheduled_publish_time")
             )
         elif name == "facebook_create_post":
             result = create_feed_post(
