@@ -108,7 +108,8 @@ def create_image_post(
         post_headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
-            "LinkedIn-Version": "202304"
+            "LinkedIn-Version": "202501",  # Current version as per documentation
+            "X-Restli-Protocol-Version": "2.0.0"
         }
         
         post_data = {
@@ -121,18 +122,12 @@ def create_image_post(
                 "targetEntities": [],
                 "thirdPartyDistributionChannels": []
             },
-            "media": [
-                {
-                    "status": "READY",
-                    "description": {
-                        "text": text
-                    },
-                    "media": asset_id,
-                    "title": {
-                        "text": "Post from TrendBolt"
-                    }
+            "content": {
+                "media": {
+                    "id": asset_id
                 }
-            ]
+            },
+            "isReshareDisabledByAuthor": False
         }
         
         logger.info(f"Creating LinkedIn post with image using Posts API")
@@ -200,7 +195,8 @@ def create_text_post(
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
-            "LinkedIn-Version": "202304"
+            "LinkedIn-Version": "202501",  # Current version as per documentation
+            "X-Restli-Protocol-Version": "2.0.0"
         }
         
         data = {
@@ -212,7 +208,8 @@ def create_text_post(
                 "feedDistribution": "MAIN_FEED",
                 "targetEntities": [],
                 "thirdPartyDistributionChannels": []
-            }
+            },
+            "isReshareDisabledByAuthor": False
         }
         
         logger.info(f"Creating LinkedIn text post using Posts API")
