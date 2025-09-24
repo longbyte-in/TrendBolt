@@ -11,11 +11,14 @@ logger = get_logger(__name__)
 
 
 def _auth_headers(token: str, rest: bool = False) -> dict:
-    headers = {"Authorization": f"Bearer {token}"}
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "X-Restli-Protocol-Version": "2.0.0",
+    }
     if rest:
         headers.update({
             "Content-Type": "application/json",
-            "LinkedIn-Version": "202501",
+            "LinkedIn-Version": "202509",
         })
     return headers
 
@@ -35,7 +38,7 @@ def create_image_post(
     timeout_seconds: float = 30.0,
     client: Optional[httpx.Client] = None,
 ) -> Dict[str, Any]:
-    """Create an image post on LinkedIn Page using the new Images API."""
+    """Create an image post on LinkedIn Page using the new Images API (2025-09)."""
     s = get_settings()
     pid, token = s.linkedin_page_id, s.linkedin_access_token
     if not pid or not token:
@@ -43,7 +46,7 @@ def create_image_post(
 
     client, owns = _get_client(client, timeout_seconds)
     try:
-        # Step 1: Initialize image upload
+        # Step 1: Initialize image upload using new Images API
         init_url = "https://api.linkedin.com/rest/images?action=initializeUpload"
         init_data = {
             "initializeUploadRequest": {
@@ -62,25 +65,28 @@ def create_image_post(
         upload_resp = client.put(upload_url, headers={"Authorization": f"Bearer {token}"}, content=img.content)
         upload_resp.raise_for_status()
 
-        # Wait a bit for LinkedIn to process the image
-        time.sleep(2)
+        # Wait for LinkedIn to process the image
+        time.sleep(3)
 
-        # Step 3: Create the post
+        # Step 3: Create the post using new Posts API format
         post_url = "https://api.linkedin.com/rest/posts"
         post_data = {
             "author": f"urn:li:organization:{pid}",
             "commentary": text,
             "visibility": "PUBLIC",
-            "distribution": {"feedDistribution": "MAIN_FEED"},
-            "content": {
-                "media": [
-                    {
-                        "id": image_urn,
-                        "altText": text[:120] or "Post from TrendBolt"
-                    }
-                ]
+            "distribution": {
+                "feedDistribution": "MAIN_FEED",
+                "targetEntities": [],
+                "thirdPartyDistributionChannels": []
             },
-            "lifecycleState": "PUBLISHED"
+            "content": {
+                "media": {
+                    "id": image_urn,
+                    "altText": text[:120] or "Post from TrendBolt"
+                }
+            },
+            "lifecycleState": "PUBLISHED",
+            "isReshareDisabledByAuthor": False
         }
         resp = client.post(post_url, headers=_auth_headers(token, rest=True), json=post_data)
         resp.raise_for_status()
@@ -104,7 +110,7 @@ def create_text_post(
     timeout_seconds: float = 30.0,
     client: Optional[httpx.Client] = None,
 ) -> Dict[str, Any]:
-    """Create a text-only post on LinkedIn Page."""
+    """Create a text-only post on LinkedIn Page using the new Posts API (2025-09)."""
     s = get_settings()
     pid, token = s.linkedin_page_id, s.linkedin_access_token
     if not pid or not token:
@@ -117,7 +123,11 @@ def create_text_post(
             "author": f"urn:li:organization:{pid}",
             "commentary": text,
             "visibility": "PUBLIC",
-            "distribution": {"feedDistribution": "MAIN_FEED"},
+            "distribution": {
+                "feedDistribution": "MAIN_FEED",
+                "targetEntities": [],
+                "thirdPartyDistributionChannels": []
+            },
             "lifecycleState": "PUBLISHED",
             "isReshareDisabledByAuthor": False,
         }
@@ -140,7 +150,7 @@ def get_page_info(
     timeout_seconds: float = 30.0,
     client: Optional[httpx.Client] = None,
 ) -> Dict[str, Any]:
-    """Fetch LinkedIn Page information."""
+    """Fetch LinkedIn Page information using the new API (2025-09)."""
     s = get_settings()
     pid, token = s.linkedin_page_id, s.linkedin_access_token
     if not pid or not token:
