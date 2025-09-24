@@ -81,20 +81,23 @@ def create_image_post(
 
         # Step 3: Create post
         post_url = "https://api.linkedin.com/rest/posts"
-        post_data = {
-            "author": f"urn:li:organization:{pid}",
-            "commentary": text,
-            "visibility": "PUBLIC",
-            "distribution": {"feedDistribution": "MAIN_FEED"},
-            "content": {
-                "media": {
-                    "altText": text[:120] or "Post from TrendBolt",
-                    "id": asset_id,
-                }
-            },
-            "lifecycleState": "PUBLISHED",
-            "isReshareDisabledByAuthor": False,
-        }
+       post_data = {
+    "author": f"urn:li:organization:{pid}",
+    "commentary": text,
+    "visibility": "PUBLIC",
+    "distribution": {"feedDistribution": "MAIN_FEED"},
+    "content": {
+        "media": [
+            {
+                "altText": text[:120] or "Post from TrendBolt",
+                "id": asset_id
+            }
+        ]
+    },
+    "lifecycleState": "PUBLISHED",
+    "isReshareDisabledByAuthor": False
+}
+
         resp = client.post(post_url, headers=_auth_headers(token, rest=True), json=post_data)
         resp.raise_for_status()
         post_response = resp.json()
