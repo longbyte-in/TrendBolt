@@ -30,13 +30,13 @@ class Settings(BaseSettings):
     canva_access_token: str | None = None
     canva_brand_template_id: str | None = None
 
-    # Azure Blob Storage removed; images posted directly to Facebook
+    # Azure Blob Storage removed; images posted directly to LinkedIn
 
-    # Facebook
-    facebook_app_id: str | None = None
-    facebook_app_secret: str | None = None
-    facebook_page_id: str | None = None
-    facebook_page_access_token: str | None = None
+    # LinkedIn
+    linkedin_client_id: str | None = None
+    linkedin_client_secret: str | None = None
+    linkedin_page_id: str | None = None
+    linkedin_access_token: str | None = None
 
     # App options
     log_level: str = "INFO"

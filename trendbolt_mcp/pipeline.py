@@ -6,7 +6,7 @@ from .config import get_settings
 from .tools.reddit import get_trending
 from .tools.llm import generate_canvas_post
 from .tools.canva_connect import create_autofill_job, get_autofill_job
-from .tools.facebook import publish_photo
+from .tools.linkedin import create_image_post
 
 
 async def run_once(
@@ -55,13 +55,27 @@ async def run_once(
     else:
         status = "no_job"
 
-    # Post to Facebook if thumbnail URL available
-    post = None
+    # Post to LinkedIn if thumbnail URL available
+    linkedin_post = None
+    
     if design_result and design_result.get("thumbnail", {}).get("url"):
-        post = publish_photo(
-            caption=content.get("description", ""),
-            image_url=design_result["thumbnail"]["url"],
-        )
-    return {"status": status, "topic": topic, "content": content, "design": design_result, "post": post}
+        thumbnail_url = design_result["thumbnail"]["url"]
+        
+        # Post to LinkedIn
+        try:
+            linkedin_post = create_image_post(
+                image_url=thumbnail_url,
+                text=content.get("description", ""),
+            )
+        except Exception as e:
+            linkedin_post = {"error": str(e)}
+    
+    return {
+        "status": status, 
+        "topic": topic, 
+        "content": content, 
+        "design": design_result, 
+        "linkedin_post": linkedin_post
+    }
 
 

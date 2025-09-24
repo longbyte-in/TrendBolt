@@ -52,7 +52,7 @@ from .tools.canva_connect import (
     create_url_asset_upload_job,
     get_asset_upload_job,
 )
-from .tools.facebook import publish_photo, create_feed_post
+from .tools.facebook import publish_photo, publish_multi_photo_post, create_feed_post
 
 
 
