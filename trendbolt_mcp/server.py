@@ -50,8 +50,10 @@ from .tools.canva_connect import (
     build_autofill_data,
     upload_image_from_url,
     create_url_asset_upload_job,
+    create_asset_upload_job,
     get_asset_upload_job,
 )
+from .tools.linkedin import create_image_post, create_text_post, get_page_info
 from .pipeline import run_once
 
 
@@ -199,8 +201,8 @@ async def list_tools() -> List[Tool]:
             }
         ),
         Tool(
-            name="canva_create_url_asset_upload_job",
-            description="Create an asset upload job from URL (more efficient than binary upload)",
+            name="canva_create_asset_upload_job",
+            description="Create an asset upload job to upload an image from URL to Canva (binary upload)",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -375,6 +377,11 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
         elif name == "canva_get_asset_upload_job":
             result = get_asset_upload_job(
                 job_id=arguments["job_id"]
+            )
+        elif name == "canva_create_asset_upload_job":
+            result = create_asset_upload_job(
+                image_url=arguments["image_url"],
+                asset_name=arguments["asset_name"]
             )
         elif name == "canva_create_url_asset_upload_job":
             result = create_url_asset_upload_job(

@@ -249,6 +249,73 @@ def create_autofill_job_from_values(
 
 
 @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.5, max=4), retry=retry_if_exception_type(httpx.HTTPError))
+def create_asset_upload_job(
+    image_url: str,
+    asset_name: str,
+    timeout_seconds: float = 30.0,
+    client: Optional[httpx.Client] = None,
+) -> dict:
+    """Create an asset upload job to upload an image from URL to Canva.
+    
+    Downloads the image from URL and uploads it as binary data to Canva.
+    
+    Docs: https://www.canva.dev/docs/connect/api-reference/assets/create-asset-upload-job/
+    """
+    from ..logging import get_logger
+    logger = get_logger(__name__)
+    
+    s = get_settings()
+    token = s.canva_access_token
+    if not token:
+        raise ValueError("Canva access token is required. Set CANVA_ACCESS_TOKEN in environment.")
+
+    import base64
+    
+    # Encode asset name in Base64 as required by the API
+    name_base64 = base64.b64encode(asset_name.encode('utf-8')).decode('ascii')
+    
+    url = "https://api.canva.com/rest/v1/asset-uploads"
+    
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/octet-stream",
+        "Asset-Upload-Metadata": f'{{"name_base64": "{name_base64}"}}'
+    }
+
+    logger.info(f"Creating asset upload job for: {asset_name}")
+    logger.info(f"Image URL: {image_url}")
+    logger.info(f"Request URL: {url}")
+    logger.info(f"Name base64: {name_base64}")
+
+    owns = False
+    if client is None:
+        client = httpx.Client(timeout=timeout_seconds)
+        owns = True
+    try:
+        # Download image from URL
+        logger.info(f"Downloading image from: {image_url}")
+        image_resp = client.get(image_url)
+        image_resp.raise_for_status()
+        image_data = image_resp.content
+        
+        logger.info(f"Downloaded image size: {len(image_data)} bytes")
+        
+        # Upload image data to Canva
+        resp = client.post(url, headers=headers, content=image_data)
+        
+        logger.info(f"Response status: {resp.status_code}")
+        if resp.status_code != 200:
+            logger.error(f"Request failed with status {resp.status_code}")
+            logger.error(f"Response body: {resp.text}")
+        
+        resp.raise_for_status()
+        return resp.json()
+    finally:
+        if owns:
+            client.close()
+
+
+@retry(reraise=True, stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.5, max=4), retry=retry_if_exception_type(httpx.HTTPError))
 def create_url_asset_upload_job(
     image_url: str,
     asset_name: str,
