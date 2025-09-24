@@ -90,12 +90,26 @@ def create_image_post(
         }
         resp = client.post(post_url, headers=_auth_headers(token, rest=True), json=post_data)
         resp.raise_for_status()
-        post_resp = resp.json()
+        
+        # LinkedIn Posts API returns post ID in x-restli-id header for successful creation
+        post_id = resp.headers.get("x-restli-id")
+        
+        # Try to parse JSON response if available, otherwise use header
+        post_resp = {}
+        if resp.text.strip():
+            try:
+                post_resp = resp.json()
+            except ValueError:
+                # Empty or invalid JSON response is normal for successful post creation
+                pass
+        
+        # Use post ID from header or response body
+        final_post_id = post_id or post_resp.get("id")
 
         return {
-            "post_id": post_resp.get("id"),
+            "post_id": final_post_id,
             "image_urn": image_urn,
-            "permalink_url": f"https://www.linkedin.com/feed/update/{post_resp.get('id')}" if post_resp.get("id") else None,
+            "permalink_url": f"https://www.linkedin.com/feed/update/{final_post_id}" if final_post_id else None,
         }
     finally:
         if owns:
@@ -133,10 +147,25 @@ def create_text_post(
         }
         resp = client.post(post_url, headers=_auth_headers(token, rest=True), json=data)
         resp.raise_for_status()
-        post_response = resp.json()
+        
+        # LinkedIn Posts API returns post ID in x-restli-id header for successful creation
+        post_id = resp.headers.get("x-restli-id")
+        
+        # Try to parse JSON response if available, otherwise use header
+        post_response = {}
+        if resp.text.strip():
+            try:
+                post_response = resp.json()
+            except ValueError:
+                # Empty or invalid JSON response is normal for successful post creation
+                pass
+        
+        # Use post ID from header or response body
+        final_post_id = post_id or post_response.get("id")
+        
         return {
-            "post_id": post_response.get("id"),
-            "permalink_url": f"https://www.linkedin.com/feed/update/{post_response.get('id')}" if post_response.get("id") else None,
+            "post_id": final_post_id,
+            "permalink_url": f"https://www.linkedin.com/feed/update/{final_post_id}" if final_post_id else None,
         }
     finally:
         if owns:
