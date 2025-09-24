@@ -116,7 +116,6 @@ def create_image_post(
             "author": f"urn:li:organization:{pid}",
             "commentary": text,
             "visibility": "PUBLIC",
-            "lifecycleState": "PUBLISHED",
             "distribution": {
                 "feedDistribution": "MAIN_FEED",
                 "targetEntities": [],
@@ -124,9 +123,11 @@ def create_image_post(
             },
             "content": {
                 "media": {
+                    "altText": text[:120] if text else "Post from TrendBolt",  # Alt text for accessibility
                     "id": asset_id
                 }
             },
+            "lifecycleState": "PUBLISHED",
             "isReshareDisabledByAuthor": False
         }
         
