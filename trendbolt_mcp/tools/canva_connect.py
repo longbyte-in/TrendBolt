@@ -77,7 +77,6 @@ def list_brand_templates(
 
 @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.5, max=4), retry=retry_if_exception_type(httpx.HTTPError))
 def get_brand_template_dataset(
-    brand_template_id: str,
     timeout_seconds: float = 30.0,
     client: Optional[httpx.Client] = None,
 ) -> dict:
@@ -87,8 +86,9 @@ def get_brand_template_dataset(
     if not token:
         raise ValueError("Canva access token is required. Set CANVA_ACCESS_TOKEN in environment.")
 
+    brand_template_id = s.canva_brand_template_id
     if not brand_template_id:
-        raise ValueError("brand_template_id is required")
+        raise ValueError("brand_template_id is required. Set CANVA_BRAND_TEMPLATE_ID in environment.")
 
     url = f"https://api.canva.com/rest/v1/brand-templates/{brand_template_id}/dataset"
 
@@ -108,14 +108,12 @@ def get_brand_template_dataset(
 @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.5, max=4), retry=retry_if_exception_type(httpx.HTTPError))
 def create_autofill_job(
     data: Dict[str, Any],
-    brand_template_id: Optional[str] = None,
     timeout_seconds: float = 30.0,
     client: Optional[httpx.Client] = None,
 ) -> dict:
     """Create an autofill job using a brand template and data mapping.
     
-    Uses CANVA_ACCESS_TOKEN and CANVA_BRAND_TEMPLATE_ID from environment by default.
-    Parameters override environment variables when provided.
+    Uses CANVA_ACCESS_TOKEN and CANVA_BRAND_TEMPLATE_ID from environment.
 
     Docs: https://www.canva.dev/docs/connect/api-reference/autofill/create-autofill-job/
     """
@@ -124,23 +122,23 @@ def create_autofill_job(
     
     s = get_settings()
     
-    # Use environment variables by default, parameters override
+    # Use environment variables
     token = s.canva_access_token
     if not token:
         raise ValueError("Canva access token is required. Set CANVA_ACCESS_TOKEN in environment.")
 
-    tpl = brand_template_id or s.canva_brand_template_id
-    if not tpl:
-        raise ValueError("brand_template_id is required. Set CANVA_BRAND_TEMPLATE_ID in environment or pass brand_template_id parameter.")
+    brand_template_id = s.canva_brand_template_id
+    if not brand_template_id:
+        raise ValueError("brand_template_id is required. Set CANVA_BRAND_TEMPLATE_ID in environment.")
 
     url = "https://api.canva.com/rest/v1/autofills"
     payload = {
-        "brand_template_id": tpl,
+        "brand_template_id": brand_template_id,
         "data": data,
     }
 
     # Log the request details
-    logger.info(f"Creating autofill job for brand template: {tpl}")
+    logger.info(f"Creating autofill job for brand template: {brand_template_id}")
     logger.info(f"Request URL: {url}")
     logger.info(f"Request payload: {json.dumps(payload, indent=2)}")
 
@@ -230,7 +228,6 @@ def create_autofill_job_from_values(
     values: Dict[str, Any],
     field_map: Optional[Dict[str, str]] = None,
     image_fields: Optional[Dict[str, str]] = None,
-    brand_template_id: Optional[str] = None,
     timeout_seconds: float = 30.0,
     client: Optional[httpx.Client] = None,
 ) -> dict:
@@ -240,14 +237,12 @@ def create_autofill_job_from_values(
         values: Dictionary of field names to values (text or asset_id)
         field_map: Optional mapping from source keys to destination keys
         image_fields: Optional mapping of field names that should be treated as images
-        brand_template_id: Canva brand template ID
         timeout_seconds: Request timeout
         client: Optional HTTP client
     """
     data = build_autofill_data(values=values, field_map=field_map, image_fields=image_fields)
     return create_autofill_job(
         data=data,
-        brand_template_id=brand_template_id,
         timeout_seconds=timeout_seconds,
         client=client,
     )
@@ -321,7 +316,13 @@ def get_asset_upload_job(job_id: str, timeout_seconds: float = 30.0, client: Opt
     if not token:
         raise ValueError("Canva access token is required. Set CANVA_ACCESS_TOKEN in environment.")
 
+    if not job_id:
+        raise ValueError("job_id is required")
+
     url = f"https://api.canva.com/rest/v1/asset-uploads/{job_id}"
+    
+    logger.info(f"Getting asset upload job status for: {job_id}")
+    logger.info(f"Request URL: {url}")
 
     owns = False
     if client is None:
@@ -329,8 +330,19 @@ def get_asset_upload_job(job_id: str, timeout_seconds: float = 30.0, client: Opt
         owns = True
     try:
         resp = client.get(url, headers=_auth_headers(token))
+        
+        logger.info(f"Response status: {resp.status_code}")
+        logger.info(f"Response headers: {dict(resp.headers)}")
+        
+        if resp.status_code != 200:
+            logger.error(f"Request failed with status {resp.status_code}")
+            logger.error(f"Response body: {resp.text}")
+        
         resp.raise_for_status()
-        return resp.json()
+        result = resp.json()
+        
+        logger.info(f"Job status: {result.get('job', {}).get('status', 'unknown')}")
+        return result
     finally:
         if owns:
             client.close()

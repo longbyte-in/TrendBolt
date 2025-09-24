@@ -21,9 +21,7 @@ logger = get_logger(__name__)
 @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.5, max=4), retry=retry_if_exception_type(httpx.HTTPError))
 def create_image_post(
     image_url: str,
-    text: str,
-    page_id: str | None = None,
-    access_token: str | None = None,
+    text: str = "",
     timeout_seconds: float = 30.0,
     client: Optional[httpx.Client] = None,
 ) -> dict:
@@ -34,9 +32,7 @@ def create_image_post(
     
     Args:
         image_url: URL of the image to post (from Canva)
-        text: Text content for the post
-        page_id: LinkedIn Page ID (uses LINKEDIN_PAGE_ID from env if not provided)
-        access_token: LinkedIn access token (uses LINKEDIN_ACCESS_TOKEN from env if not provided)
+        text: Text content for the post (defaults to empty string if not provided)
         timeout_seconds: Request timeout
         client: Optional httpx client for connection reuse
         
@@ -48,13 +44,13 @@ def create_image_post(
         httpx.HTTPError: If API request fails
     """
     s = get_settings()
-    pid = page_id or s.linkedin_page_id
-    token = access_token or s.linkedin_access_token
+    pid = s.linkedin_page_id
+    token = s.linkedin_access_token
     
     if not pid:
-        raise ValueError("LinkedIn page_id is required. Set LINKEDIN_PAGE_ID in environment or pass page_id parameter.")
+        raise ValueError("LinkedIn page_id is required. Set LINKEDIN_PAGE_ID in environment.")
     if not token:
-        raise ValueError("LinkedIn access token is required. Set LINKEDIN_ACCESS_TOKEN in environment or pass access_token parameter.")
+        raise ValueError("LinkedIn access token is required. Set LINKEDIN_ACCESS_TOKEN in environment.")
     
     owns = False
     if client is None:
@@ -171,8 +167,6 @@ def create_image_post(
 @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.5, max=4), retry=retry_if_exception_type(httpx.HTTPError))
 def create_text_post(
     text: str,
-    page_id: str | None = None,
-    access_token: str | None = None,
     timeout_seconds: float = 30.0,
     client: Optional[httpx.Client] = None,
 ) -> dict:
@@ -180,8 +174,6 @@ def create_text_post(
     
     Args:
         text: Text content for the post
-        page_id: LinkedIn Page ID (uses LINKEDIN_PAGE_ID from env if not provided)
-        access_token: LinkedIn access token (uses LINKEDIN_ACCESS_TOKEN from env if not provided)
         timeout_seconds: Request timeout
         client: Optional httpx client for connection reuse
         
@@ -189,13 +181,13 @@ def create_text_post(
         dict: {"post_id": str, "permalink_url": str}
     """
     s = get_settings()
-    pid = page_id or s.linkedin_page_id
-    token = access_token or s.linkedin_access_token
+    pid = s.linkedin_page_id
+    token = s.linkedin_access_token
     
     if not pid:
-        raise ValueError("LinkedIn page_id is required. Set LINKEDIN_PAGE_ID in environment or pass page_id parameter.")
+        raise ValueError("LinkedIn page_id is required. Set LINKEDIN_PAGE_ID in environment.")
     if not token:
-        raise ValueError("LinkedIn access token is required. Set LINKEDIN_ACCESS_TOKEN in environment or pass access_token parameter.")
+        raise ValueError("LinkedIn access token is required. Set LINKEDIN_ACCESS_TOKEN in environment.")
     
     owns = False
     if client is None:
@@ -251,16 +243,12 @@ def create_text_post(
 
 @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.5, max=4), retry=retry_if_exception_type(httpx.HTTPError))
 def get_page_info(
-    page_id: str | None = None,
-    access_token: str | None = None,
     timeout_seconds: float = 30.0,
     client: Optional[httpx.Client] = None,
 ) -> dict:
     """Get LinkedIn Page information.
     
     Args:
-        page_id: LinkedIn Page ID (uses LINKEDIN_PAGE_ID from env if not provided)
-        access_token: LinkedIn access token (uses LINKEDIN_ACCESS_TOKEN from env if not provided)
         timeout_seconds: Request timeout
         client: Optional httpx client for connection reuse
         
@@ -268,13 +256,13 @@ def get_page_info(
         dict: Page information including name, vanityName, etc.
     """
     s = get_settings()
-    pid = page_id or s.linkedin_page_id
-    token = access_token or s.linkedin_access_token
+    pid = s.linkedin_page_id
+    token = s.linkedin_access_token
     
     if not pid:
-        raise ValueError("LinkedIn page_id is required. Set LINKEDIN_PAGE_ID in environment or pass page_id parameter.")
+        raise ValueError("LinkedIn page_id is required. Set LINKEDIN_PAGE_ID in environment.")
     if not token:
-        raise ValueError("LinkedIn access token is required. Set LINKEDIN_ACCESS_TOKEN in environment or pass access_token parameter.")
+        raise ValueError("LinkedIn access token is required. Set LINKEDIN_ACCESS_TOKEN in environment.")
     
     owns = False
     if client is None:

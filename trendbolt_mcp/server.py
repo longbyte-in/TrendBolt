@@ -150,19 +150,15 @@ async def list_tools() -> List[Tool]:
             description="Get dataset definition for a Canva brand template",
             inputSchema={
                 "type": "object",
-                "properties": {
-                    "brand_template_id": {"type": "string", "description": "Brand template ID"}
-                },
-                "required": ["brand_template_id"]
+                "properties": {}
             }
         ),
         Tool(
             name="canva_create_autofill_job",
-            description="Create an autofill job for a brand template. Automatically uploads image URLs to Canva and includes them as assets. Uses CANVA_BRAND_TEMPLATE_ID from environment if brand_template_id not provided.",
+            description="Create an autofill job for a brand template. Automatically uploads image URLs to Canva and includes them as assets. Uses CANVA_BRAND_TEMPLATE_ID from environment.",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "brand_template_id": {"type": "string", "description": "Brand template ID (optional - uses CANVA_BRAND_TEMPLATE_ID from env if not provided)"},
                     "data": {"type": "object", "description": "Autofill data mapping with simple key-value pairs. Image URLs (ending in .jpg, .png, etc.) are automatically uploaded to Canva and converted to asset IDs."}
                 },
                 "required": ["data"]
@@ -226,14 +222,10 @@ async def list_tools() -> List[Tool]:
                     },
                     "text": {
                         "type": "string",
-                        "description": "Text content for the post"
-                    },
-                    "page_id": {
-                        "type": "string",
-                        "description": "LinkedIn Page ID (optional - uses LINKEDIN_PAGE_ID from env if not provided)"
+                        "description": "Text content for the post (optional, defaults to empty string)"
                     }
                 },
-                "required": ["image_url", "text"]
+                "required": ["image_url"]
             }
         ),
         Tool(
@@ -245,10 +237,6 @@ async def list_tools() -> List[Tool]:
                     "text": {
                         "type": "string",
                         "description": "Text content for the post"
-                    },
-                    "page_id": {
-                        "type": "string",
-                        "description": "LinkedIn Page ID (optional - uses LINKEDIN_PAGE_ID from env if not provided)"
                     }
                 },
                 "required": ["text"]
@@ -259,12 +247,7 @@ async def list_tools() -> List[Tool]:
             description="Get LinkedIn Page information",
             inputSchema={
                 "type": "object",
-                "properties": {
-                    "page_id": {
-                        "type": "string",
-                        "description": "LinkedIn Page ID (optional - uses LINKEDIN_PAGE_ID from env if not provided)"
-                    }
-                }
+                "properties": {}
             }
         ),
         Tool(
@@ -343,9 +326,7 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
             )
 
         elif name == "canva_get_brand_template_dataset":
-            result = canva_get_brand_template_dataset(
-                brand_template_id=arguments["brand_template_id"]
-            )
+            result = canva_get_brand_template_dataset()
         elif name == "canva_create_autofill_job":
             # Automatically handle image uploads and include in autofill datagst
             raw_data = arguments["data"]
@@ -380,8 +361,7 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
             
             result = canva_create_autofill_job(
                 values=processed_data,
-                image_fields=image_fields,
-                brand_template_id=arguments.get("brand_template_id")
+                image_fields=image_fields
             )
         elif name == "canva_get_autofill_job":
             result = canva_get_autofill_job(
@@ -405,18 +385,14 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
         elif name == "linkedin_create_image_post":
             result = create_image_post(
                 image_url=arguments["image_url"],
-                text=arguments["text"],
-                page_id=arguments.get("page_id")
+                text=arguments.get("text", "")
             )
         elif name == "linkedin_create_text_post":
             result = create_text_post(
-                text=arguments["text"],
-                page_id=arguments.get("page_id")
+                text=arguments["text"]
             )
         elif name == "linkedin_get_page_info":
-            result = get_page_info(
-                page_id=arguments.get("page_id")
-            )
+            result = get_page_info()
             
         elif name == "trendbolt_pipeline":
             # Run complete pipeline using the pipeline module
@@ -532,6 +508,59 @@ async def list_prompts() -> List[Prompt]:
                     required=False
                 )
             ]
+        ),
+        Prompt(
+            name="canva_workflow_guide",
+            description="Guide for using Canva tools in TrendBolt workflow",
+            arguments=[
+                PromptArgument(
+                    name="content_type",
+                    description="Type of content to create (social media post, story, etc.)",
+                    required=False
+                ),
+                PromptArgument(
+                    name="brand_style",
+                    description="Brand style preferences",
+                    required=False
+                )
+            ]
+        ),
+        Prompt(
+            name="canva_template_selection",
+            description="Help select the best Canva template for content",
+            arguments=[
+                PromptArgument(
+                    name="content_text",
+                    description="The text content to be designed",
+                    required=True
+                ),
+                PromptArgument(
+                    name="platform",
+                    description="Target platform (LinkedIn, Instagram, etc.)",
+                    required=False
+                )
+            ]
+        ),
+        Prompt(
+            name="canva_autofill_data_prep",
+            description="Prepare autofill data for Canva brand templates",
+            arguments=[
+                PromptArgument(
+                    name="content_title",
+                    description="Main title/headline for the design",
+                    required=True
+                ),
+                PromptArgument(
+                    name="content_description",
+                    description="Description or body text",
+                    required=False
+                ),
+                PromptArgument(
+                    name="image_urls",
+                    description="Comma-separated list of image URLs to include",
+                    required=False
+                )
+            ]
         )
     ]
 
@@ -588,6 +617,185 @@ Design Brief should include:
 - Visual guidance (icons, style, layout suggestions)
 
 Make it visually appealing and aligned with the content tone."""
+                )
+            )
+        ]
+        
+    elif name == "canva_workflow_guide":
+        content_type = arguments.get("content_type", "social media post")
+        brand_style = arguments.get("brand_style", "professional")
+        
+        return [
+            PromptMessage(
+                role="user",
+                content=PromptMessage.TextContent(
+                    type="text",
+                    text=f"""Canva Workflow Guide for {content_type.title()}
+
+Here's the complete workflow for creating designs with Canva in TrendBolt:
+
+## Step 1: List Available Templates
+Use `canva_list_brand_templates` to see your available brand templates:
+- Query: Search for specific template types (e.g., "social media", "post", "story")
+- Ownership: "owned" for your templates, "shared" for team templates
+- Sort by: "relevance", "modified_descending", "title_ascending"
+
+## Step 2: Get Template Dataset
+Use `canva_get_brand_template_dataset` with a template ID to see what fields are available:
+- This shows you exactly what data fields the template expects
+- Look for fields like "title", "subtitle", "description", "image", etc.
+
+## Step 3: Prepare Autofill Data
+Use `canva_create_autofill_job` with your content data:
+- Text fields: Direct text values
+- Image URLs: Automatically uploaded to Canva and converted to asset IDs
+- The system handles image uploads automatically
+
+## Step 4: Check Job Status
+Use `canva_get_autofill_job` to monitor progress:
+- Check status: "pending", "processing", "success", "failed"
+- Get the final design URL when complete
+
+## Best Practices for {brand_style} Style:
+- Keep headlines under 60 characters
+- Use compelling, action-oriented language
+- Ensure images are high-quality and relevant
+- Match your brand colors and fonts
+
+## Example Workflow:
+1. List templates: `canva_list_brand_templates(query="social media")`
+2. Get dataset: `canva_get_brand_template_dataset(brand_template_id="template_id")`
+3. Create design: `canva_create_autofill_job(data={{"title": "Your Title", "description": "Your text"}})`
+4. Check status: `canva_get_autofill_job(job_id="job_id")`
+
+Ready to create your {content_type}? Let's start with listing your available templates!"""
+                )
+            )
+        ]
+        
+    elif name == "canva_template_selection":
+        content_text = arguments["content_text"]
+        platform = arguments.get("platform", "LinkedIn")
+        
+        return [
+            PromptMessage(
+                role="user",
+                content=PromptMessage.TextContent(
+                    type="text",
+                    text=f"""Template Selection Guide for {platform}
+
+Content to design: "{content_text}"
+
+## Template Selection Strategy:
+
+### For {platform} Posts:
+- **Square formats** (1080x1080) work best for most platforms
+- **Vertical formats** (1080x1350) for stories and mobile-first content
+- **Horizontal formats** (1200x630) for LinkedIn articles and headers
+
+### Content Analysis:
+Based on your text: "{content_text}"
+
+**Recommended template types:**
+- **Text-heavy content**: Look for templates with large text areas
+- **Quote/inspirational**: Use quote-style templates with emphasis on typography
+- **Informational**: Choose templates with clear hierarchy and bullet points
+- **Visual content**: Select templates with prominent image areas
+
+### Search Queries to Try:
+1. `canva_list_brand_templates(query="social media {platform.lower()}")`
+2. `canva_list_brand_templates(query="post template")`
+3. `canva_list_brand_templates(query="quote design")`
+4. `canva_list_brand_templates(query="infographic")`
+
+### Template Evaluation Criteria:
+- **Text capacity**: Does it have enough space for your content?
+- **Visual hierarchy**: Clear headline, subtext, and body text areas
+- **Brand alignment**: Matches your brand colors and style
+- **Platform optimization**: Right dimensions for {platform}
+
+### Next Steps:
+1. Run `canva_list_brand_templates` with relevant queries
+2. Review template previews and descriptions
+3. Select 2-3 promising templates
+4. Use `canva_get_brand_template_dataset` to see field requirements
+5. Choose the best match for your content
+
+Would you like me to help you search for templates now?"""
+                )
+            )
+        ]
+        
+    elif name == "canva_autofill_data_prep":
+        content_title = arguments["content_title"]
+        content_description = arguments.get("content_description", "")
+        image_urls = arguments.get("image_urls", "")
+        
+        return [
+            PromptMessage(
+                role="user",
+                content=PromptMessage.TextContent(
+                    type="text",
+                    text=f"""Autofill Data Preparation
+
+## Your Content:
+**Title**: {content_title}
+**Description**: {content_description}
+**Images**: {image_urls if image_urls else "None provided"}
+
+## Autofill Data Structure:
+
+### Standard Fields (most templates use these):
+```json
+{{
+    "title": "{content_title}",
+    "headline": "{content_title}",
+    "subtitle": "{content_description[:100]}{'...' if len(content_description) > 100 else ''}",
+    "description": "{content_description}",
+    "text": "{content_description}"
+}}
+```
+
+### Image Fields (if images provided):
+{f'''```json
+{{
+    "image": "{image_urls.split(',')[0].strip()}",
+    "background_image": "{image_urls.split(',')[0].strip()}",
+    "hero_image": "{image_urls.split(',')[0].strip()}"
+}}
+```''' if image_urls else "No images provided - using text-only fields"}
+
+### Advanced Fields (for specific templates):
+- **CTA fields**: "button_text", "call_to_action", "cta"
+- **Brand fields**: "brand_name", "company_name", "logo"
+- **Social fields**: "hashtags", "social_handle", "website"
+
+## Template-Specific Preparation:
+
+### Before creating autofill job:
+1. **Get template dataset**: `canva_get_brand_template_dataset(brand_template_id="your_template_id")`
+2. **Review required fields**: Check what fields the template expects
+3. **Map your content**: Match your content to template field names
+4. **Handle images**: Image URLs are automatically uploaded and converted to asset IDs
+
+### Example Autofill Job:
+```json
+{{
+    "data": {{
+        "title": "{content_title}",
+        "description": "{content_description}",
+        "image": "{image_urls.split(',')[0].strip() if image_urls else ''}"
+    }}
+}}
+```
+
+### Pro Tips:
+- **Keep titles under 60 characters** for best visual impact
+- **Descriptions under 200 characters** for readability
+- **Use high-quality images** (minimum 1080px width)
+- **Test with different templates** to find the best fit
+
+Ready to create your autofill job? Let me know which template you'd like to use!"""
                 )
             )
         ]
