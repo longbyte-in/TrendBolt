@@ -6,7 +6,7 @@ Provides tools for:
 - Reddit trending content discovery
 - LLM-powered content generation  
 - Canva design creation
-- Facebook publishing
+- LinkedIn publishing
 
 Resources:
 - Trending topics from Reddit
@@ -52,7 +52,7 @@ from .tools.canva_connect import (
     create_url_asset_upload_job,
     get_asset_upload_job,
 )
-from .tools.facebook import publish_photo, publish_multi_photo_post, create_feed_post
+from .pipeline import run_once
 
 
 
@@ -215,86 +215,61 @@ async def list_tools() -> List[Tool]:
             }
         ),
         Tool(
-            name="facebook_publish_photo",
-            description="Publish a photo to Facebook Page using URL from Canva. Uses Facebook Graph API v23.0 with URL-based photo upload.",
+            name="linkedin_create_image_post",
+            description="Create an image post on LinkedIn Page using Posts API. Requires LinkedIn Advertising API access.",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "image_url": {
                         "type": "string",
-                        "description": "URL of the image to upload (typically from Canva thumbnail)"
+                        "description": "URL of the image to post (typically from Canva thumbnail)"
                     },
-                    "message": {
+                    "text": {
                         "type": "string",
-                        "description": "Text message to accompany the photo (optional)"
-                    },
-                    "published": {
-                        "type": "boolean",
-                        "description": "Whether to publish immediately (default: true)",
-                        "default": True
+                        "description": "Text content for the post"
                     },
                     "page_id": {
                         "type": "string",
-                        "description": "Facebook Page ID (optional - uses FACEBOOK_PAGE_ID from env if not provided)"
-                    },
-                    "scheduled_publish_time": {
-                        "type": "integer",
-                        "description": "Unix timestamp for scheduled posts (requires published=false)"
+                        "description": "LinkedIn Page ID (optional - uses LINKEDIN_PAGE_ID from env if not provided)"
                     }
                 },
-                "required": ["image_url"]
+                "required": ["image_url", "text"]
             }
         ),
         Tool(
-            name="facebook_publish_multi_photo",
-            description="Publish a multi-photo post to Facebook Page. Uploads multiple images and creates a single post with attached media.",
+            name="linkedin_create_text_post",
+            description="Create a text-only post on LinkedIn Page using Posts API.",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "message": {
+                    "text": {
                         "type": "string",
-                        "description": "Text message for the post"
-                    },
-                    "image_urls": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "List of image URLs to upload"
-                    },
-                    "published": {
-                        "type": "boolean",
-                        "description": "Whether to publish immediately (default: true)",
-                        "default": True
+                        "description": "Text content for the post"
                     },
                     "page_id": {
                         "type": "string",
-                        "description": "Facebook Page ID (optional - uses FACEBOOK_PAGE_ID from env if not provided)"
-                    },
-                    "scheduled_publish_time": {
-                        "type": "integer",
-                        "description": "Unix timestamp for scheduled posts (requires published=false)"
+                        "description": "LinkedIn Page ID (optional - uses LINKEDIN_PAGE_ID from env if not provided)"
                     }
                 },
-                "required": ["message", "image_urls"]
+                "required": ["text"]
             }
         ),
         Tool(
-            name="facebook_create_post",
-            description="Create a feed post on a Facebook Page",
+            name="linkedin_get_page_info",
+            description="Get LinkedIn Page information",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "message": {"type": "string"},
-                    "link": {"type": "string"},
-                    "published": {"type": "boolean", "default": True},
-                    "scheduled_publish_time": {"type": "integer"},
-                    "page_id": {"type": "string"}
-                },
-                "required": ["message", "page_id"]
+                    "page_id": {
+                        "type": "string",
+                        "description": "LinkedIn Page ID (optional - uses LINKEDIN_PAGE_ID from env if not provided)"
+                    }
+                }
             }
         ),
         Tool(
             name="trendbolt_pipeline",
-            description="Run complete TrendBolt pipeline: Reddit → LLM → Canva → Facebook",
+            description="Run complete TrendBolt pipeline: Reddit → LLM → Canva → LinkedIn",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -309,9 +284,9 @@ async def list_tools() -> List[Tool]:
                         "description": "Canva template ID",
                         "default": "trendbolt_template_default"
                     },
-                    "facebook_page_id": {
+                    "linkedin_page_id": {
                         "type": "string",
-                        "description": "Facebook page ID to post to"
+                        "description": "LinkedIn page ID to post to"
                     },
                     "min_score": {
                         "type": "integer",
@@ -319,7 +294,7 @@ async def list_tools() -> List[Tool]:
                         "default": 200
                     }
                 },
-                "required": ["facebook_page_id"]
+                "required": ["linkedin_page_id"]
             }
         )
     ]
@@ -427,57 +402,29 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
                 asset_name=arguments["asset_name"]
             )
             
-        elif name == "facebook_publish_photo":
-            result = publish_photo(
+        elif name == "linkedin_create_image_post":
+            result = create_image_post(
                 image_url=arguments["image_url"],
-                message=arguments.get("message"),
-                published=arguments.get("published", True),
-                page_id=arguments.get("page_id"),
-                scheduled_publish_time=arguments.get("scheduled_publish_time")
+                text=arguments["text"],
+                page_id=arguments.get("page_id")
             )
-        elif name == "facebook_publish_multi_photo":
-            result = publish_multi_photo_post(
-                message=arguments["message"],
-                image_urls=arguments["image_urls"],
-                published=arguments.get("published", True),
-                page_id=arguments.get("page_id"),
-                scheduled_publish_time=arguments.get("scheduled_publish_time")
+        elif name == "linkedin_create_text_post":
+            result = create_text_post(
+                text=arguments["text"],
+                page_id=arguments.get("page_id")
             )
-        elif name == "facebook_create_post":
-            result = create_feed_post(
-                message=arguments["message"],
-                link=arguments.get("link"),
-                published=arguments.get("published", True),
-                scheduled_publish_time=arguments.get("scheduled_publish_time"),
-                page_id=arguments["page_id"],
+        elif name == "linkedin_get_page_info":
+            result = get_page_info(
+                page_id=arguments.get("page_id")
             )
             
         elif name == "trendbolt_pipeline":
-            # Run complete pipeline
-            topics = await get_trending(
+            # Run complete pipeline using the pipeline module
+            result = await run_once(
                 subreddits=arguments.get("subreddits", ["technology"]),
-                min_score=arguments.get("min_score", 200)
+                min_score=arguments.get("min_score", 200),
+                template_id=arguments.get("template_id", "trendbolt_template_default")
             )
-            
-            if not topics:
-                result = {"status": "no_topics", "message": "No trending topics found"}
-            else:
-                topic = topics[0]
-                content = generate_canvas_post(
-                    topic=topic,
-                    brand={"cta": "Follow TrendBolt"}
-                )
-                # Note: Canva creation via Connect API requires separate autofill job flow.
-                # Here we return content and allow caller to choose a brand template via tools.
-                post = {"status": "skipped", "reason": "design_creation_moved_to_canva_connect_flow"}
-                
-                result = {
-                    "status": "success",
-                    "topic": topic,
-                    "content": content,
-                    "design": None,
-                    "post": post
-                }
         else:
             result = {"error": f"Unknown tool: {name}"}
         
