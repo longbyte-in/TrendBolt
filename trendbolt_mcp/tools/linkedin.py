@@ -1,12 +1,4 @@
-"""
-LinkedIn Advertising API publishing helper.
-
-This implementation uses the LinkedIn Advertising API with UGC (User Generated Content) endpoints
-to create and publish posts on LinkedIn Pages. Requires LinkedIn Advertising API Development Tier access.
-"""
-
 from __future__ import annotations
-
 from typing import Optional, Dict, Any
 import httpx
 import time
@@ -19,13 +11,12 @@ logger = get_logger(__name__)
 
 
 def _auth_headers(token: str, rest: bool = False) -> dict:
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "X-Restli-Protocol-Version": "2.0.0",
-    }
+    headers = {"Authorization": f"Bearer {token}"}
     if rest:
-        headers["Content-Type"] = "application/json"
-        headers["LinkedIn-Version"] = "202501"
+        headers.update({
+            "Content-Type": "application/json",
+            "LinkedIn-Version": "202501",
+        })
     return headers
 
 
@@ -44,46 +35,37 @@ def create_image_post(
     timeout_seconds: float = 30.0,
     client: Optional[httpx.Client] = None,
 ) -> Dict[str, Any]:
-    """Create an image post on LinkedIn Page."""
+    """Create an image post on LinkedIn Page using the new Images API."""
     s = get_settings()
     pid, token = s.linkedin_page_id, s.linkedin_access_token
-    if not pid:
-        raise ValueError("LinkedIn page_id is required. Set LINKEDIN_PAGE_ID.")
-    if not token:
-        raise ValueError("LinkedIn access token is required. Set LINKEDIN_ACCESS_TOKEN.")
+    if not pid or not token:
+        raise ValueError("LinkedIn page_id and access_token are required.")
 
     client, owns = _get_client(client, timeout_seconds)
     try:
-        # Step 1: Register upload
-        register_url = "https://api.linkedin.com/v2/assets?action=registerUpload"
-        register_data = {
-            "registerUploadRequest": {
-                "recipes": ["urn:li:digitalmediaRecipe:feedshare-image"],
-                "owner": f"urn:li:organization:{pid}",
-                "serviceRelationships": [
-                    {
-                        "relationshipType": "OWNER",
-                        "identifier": "urn:li:userGeneratedContent",
-                    }
-                ],
+        # Step 1: Initialize image upload
+        init_url = "https://api.linkedin.com/rest/images?action=initializeUpload"
+        init_data = {
+            "initializeUploadRequest": {
+                "owner": f"urn:li:organization:{pid}"
             }
         }
-        resp = client.post(register_url, headers=_auth_headers(token), json=register_data)
+        resp = client.post(init_url, headers=_auth_headers(token, rest=True), json=init_data)
         resp.raise_for_status()
-        reg = resp.json()
-        upload_url = reg["value"]["uploadMechanism"]["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"]["uploadUrl"]
-        asset_id = reg["value"]["asset"]
+        init_resp = resp.json()
+        upload_url = init_resp["value"]["uploadUrl"]
+        image_urn = init_resp["value"]["image"]
 
-        # Step 2: Upload image (PUT required)
+        # Step 2: Upload the image (PUT)
         img = client.get(image_url)
         img.raise_for_status()
         upload_resp = client.put(upload_url, headers={"Authorization": f"Bearer {token}"}, content=img.content)
         upload_resp.raise_for_status()
-        
-        # Wait for upload to be processed
+
+        # Wait a bit for LinkedIn to process the image
         time.sleep(2)
 
-        # Step 3: Create post
+        # Step 3: Create the post
         post_url = "https://api.linkedin.com/rest/posts"
         post_data = {
             "author": f"urn:li:organization:{pid}",
@@ -93,8 +75,8 @@ def create_image_post(
             "content": {
                 "media": [
                     {
-                        "altText": text[:120] or "Post from TrendBolt",
-                        "id": asset_id
+                        "id": image_urn,
+                        "altText": text[:120] or "Post from TrendBolt"
                     }
                 ]
             },
@@ -102,13 +84,12 @@ def create_image_post(
         }
         resp = client.post(post_url, headers=_auth_headers(token, rest=True), json=post_data)
         resp.raise_for_status()
-        post_response = resp.json()
+        post_resp = resp.json()
+
         return {
-            "post_id": post_response.get("id"),
-            "asset_id": asset_id,
-            # LinkedIn doesn’t return permalink, but we can try this fallback
-            "permalink_url": f"https://www.linkedin.com/feed/update/{post_response.get('id')}"
-            if post_response.get("id") else None,
+            "post_id": post_resp.get("id"),
+            "image_urn": image_urn,
+            "permalink_url": f"https://www.linkedin.com/feed/update/{post_resp.get('id')}" if post_resp.get("id") else None,
         }
     finally:
         if owns:
@@ -145,8 +126,7 @@ def create_text_post(
         post_response = resp.json()
         return {
             "post_id": post_response.get("id"),
-            "permalink_url": f"https://www.linkedin.com/feed/update/{post_response.get('id')}"
-            if post_response.get("id") else None,
+            "permalink_url": f"https://www.linkedin.com/feed/update/{post_response.get('id')}" if post_response.get("id") else None,
         }
     finally:
         if owns:
