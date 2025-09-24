@@ -94,8 +94,7 @@ def create_image_post(
                     }
                 ]
             },
-            "lifecycleState": "PUBLISHED",
-            "isReshareDisabledByAuthor": False
+            "lifecycleState": "PUBLISHED"
         }
         resp = client.post(post_url, headers=_auth_headers(token, rest=True), json=post_data)
         resp.raise_for_status()
