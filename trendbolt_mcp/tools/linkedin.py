@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Optional, Dict, Any
 import httpx
+import time
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from ..config import get_settings
@@ -78,6 +79,9 @@ def create_image_post(
         img.raise_for_status()
         upload_resp = client.put(upload_url, headers={"Authorization": f"Bearer {token}"}, content=img.content)
         upload_resp.raise_for_status()
+        
+        # Wait for upload to be processed
+        time.sleep(2)
 
         # Step 3: Create post
         post_url = "https://api.linkedin.com/rest/posts"
