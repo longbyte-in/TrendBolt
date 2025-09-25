@@ -8,11 +8,11 @@ credentials from app settings.
 from __future__ import annotations
 
 from typing import Any, AsyncIterable, Protocol
+import logging
 
 from ..config import get_settings
-from ..logging import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class RedditFetcher(Protocol):
@@ -119,7 +119,7 @@ async def get_trending(
     results: list[dict] = []
     for sub in subreddits:
         try:
-            posts = await client.fetch(sub, strategy, limit, time_filter)
+            posts = client.fetch(sub, strategy, limit, time_filter)
             async for post in posts:
                 shaped = _shape_post(post)
                 if shaped["score"] >= min_score:

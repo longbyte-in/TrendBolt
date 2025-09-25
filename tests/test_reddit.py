@@ -34,6 +34,10 @@ class FakeFetcher:
 async def test_get_trending_shapes_and_sorts():
     results = await reddit_tool.get_trending(
         subreddits=["technology"],
+        strategy="hot",
+        limit=10,
+        time_filter="day",
+        min_score=0,  # Don't filter by score
         client=FakeFetcher(),
     )
     assert len(results) == 3

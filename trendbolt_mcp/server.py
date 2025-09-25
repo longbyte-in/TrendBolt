@@ -54,7 +54,7 @@ from .tools.canva_connect import (
     get_asset_upload_job,
 )
 from .tools.linkedin import create_image_post, create_text_post, get_page_info
-from .pipeline import run_once
+from .orchestrator import TrendBoltLangChainAgent
 
 
 
@@ -253,33 +253,48 @@ async def list_tools() -> List[Tool]:
             }
         ),
         Tool(
-            name="trendbolt_pipeline",
-            description="Run complete TrendBolt pipeline: Reddit → LLM → Canva → LinkedIn",
+            name="langchain_workflow",
+            description="Execute TrendBolt workflow using LangChain orchestration with intelligent decision-making",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "subreddits": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "Subreddits to fetch from",
-                        "default": ["technology"]
+                        "description": "Subreddits to search for trending content",
+                        "default": ["technology", "programming"]
                     },
-                    "template_id": {
+                    "strategy": {
                         "type": "string",
-                        "description": "Canva template ID",
-                        "default": "trendbolt_template_default"
-                    },
-                    "linkedin_page_id": {
-                        "type": "string",
-                        "description": "LinkedIn page ID to post to"
+                        "enum": ["hot", "top", "new"],
+                        "description": "Reddit search strategy",
+                        "default": "hot"
                     },
                     "min_score": {
                         "type": "integer",
-                        "description": "Minimum Reddit post score",
-                        "default": 200
+                        "description": "Minimum Reddit post score threshold",
+                        "default": 100
+                    }
+                }
+            }
+        ),
+        Tool(
+            name="langchain_agent_query",
+            description="Execute a natural language query using the LangChain agent for flexible workflow execution",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Natural language description of what you want to accomplish (e.g., 'Find trending AI topics and create a LinkedIn post')"
+                    },
+                    "subreddits": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional: specific subreddits to focus on"
                     }
                 },
-                "required": ["linkedin_page_id"]
+                "required": ["query"]
             }
         )
     ]
@@ -401,13 +416,28 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
         elif name == "linkedin_get_page_info":
             result = get_page_info()
             
-        elif name == "trendbolt_pipeline":
-            # Run complete pipeline using the pipeline module
-            result = await run_once(
-                subreddits=arguments.get("subreddits", ["technology"]),
-                min_score=arguments.get("min_score", 200),
-                template_id=arguments.get("template_id", "trendbolt_template_default")
-            )
+        elif name == "langchain_workflow":
+            # Execute LangChain workflow
+            try:
+                agent = TrendBoltLangChainAgent()
+                result = await agent.execute_workflow(
+                    subreddits=arguments.get("subreddits", ["technology", "programming"]),
+                    strategy=arguments.get("strategy", "hot"),
+                    min_score=arguments.get("min_score", 100)
+                )
+            except Exception as e:
+                result = {"error": f"LangChain workflow failed: {str(e)}"}
+                
+        elif name == "langchain_agent_query":
+            # Execute natural language query with LangChain agent
+            try:
+                agent = TrendBoltLangChainAgent()
+                result = await agent.execute_simple_pipeline(
+                    query=arguments["query"],
+                    subreddits=arguments.get("subreddits")
+                )
+            except Exception as e:
+                result = {"error": f"LangChain agent query failed: {str(e)}"}
         else:
             result = {"error": f"Unknown tool: {name}"}
         

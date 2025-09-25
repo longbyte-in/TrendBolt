@@ -12,16 +12,15 @@ Docs:
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any, Dict, Optional
 
 import httpx
-
-from ..config import get_settings
-from ..logging import get_logger
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
+from ..config import get_settings
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def _auth_headers(token: str) -> dict[str, str]:
@@ -117,8 +116,7 @@ def create_autofill_job(
 
     Docs: https://www.canva.dev/docs/connect/api-reference/autofill/create-autofill-job/
     """
-    from ..logging import get_logger
-    logger = get_logger(__name__)
+    logger = logging.getLogger(__name__)
     
     s = get_settings()
     
@@ -261,8 +259,7 @@ def create_asset_upload_job(
     
     Docs: https://www.canva.dev/docs/connect/api-reference/assets/create-asset-upload-job/
     """
-    from ..logging import get_logger
-    logger = get_logger(__name__)
+    logger = logging.getLogger(__name__)
     
     s = get_settings()
     token = s.canva_access_token
@@ -326,8 +323,7 @@ def create_url_asset_upload_job(
     
     Docs: https://www.canva.dev/docs/connect/api-reference/assets/create-url-asset-upload-job/
     """
-    from ..logging import get_logger
-    logger = get_logger(__name__)
+    logger = logging.getLogger(__name__)
     
     s = get_settings()
     token = s.canva_access_token
@@ -375,8 +371,7 @@ def get_asset_upload_job(job_id: str, timeout_seconds: float = 30.0, client: Opt
     
     Docs: https://www.canva.dev/docs/connect/api-reference/assets/get-asset-upload-job/
     """
-    from ..logging import get_logger
-    logger = get_logger(__name__)
+    logger = logging.getLogger(__name__)
     
     s = get_settings()
     token = s.canva_access_token
@@ -430,8 +425,7 @@ def upload_image_from_url(
     
     Uses the more efficient URL-based upload API.
     """
-    from ..logging import get_logger
-    logger = get_logger(__name__)
+    logger = logging.getLogger(__name__)
     
     logger.info(f"Uploading image from URL: {image_url}")
     

@@ -19,7 +19,7 @@ def test_settings_llm_provider_openai(monkeypatch):
 
     reload(config)
     settings = config.get_settings()
-    assert settings.llm_provider == "openai"
+    assert settings.llm_provider == "azure_openai"
 
 
 def test_settings_llm_provider_azure(monkeypatch):

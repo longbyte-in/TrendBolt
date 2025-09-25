@@ -2,12 +2,12 @@ from __future__ import annotations
 from typing import Optional, Dict, Any
 import httpx
 import time
+import logging
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from ..config import get_settings
-from ..logging import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def _auth_headers(token: str, rest: bool = False) -> dict:

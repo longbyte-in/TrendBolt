@@ -1,15 +1,35 @@
 # TrendBolt MCP Server
 
-A Model Context Protocol (MCP) server for automated social media content creation. TrendBolt discovers trending topics on Reddit, generates engaging content using LLM, creates designs with Canva, and publishes to Facebook.
+A Model Context Protocol (MCP) server for automated social media content creation. TrendBolt discovers trending topics on Reddit, generates engaging content using LLM, creates designs with Canva, and publishes to LinkedIn.
 
-## 🚀 Features
+## 📚 Documentation
 
-### **Tools**
-- **`reddit_get_trending`** - Fetch trending posts from Reddit subreddits
-- **`llm_generate_content`** - Generate viral social media content using LLM
-- **`canva_create_design`** - Create designs in Canva with custom briefs
-- **`facebook_publish_post`** - Publish posts to Facebook pages
-- **`trendbolt_pipeline`** - Run complete automation pipeline
+**Complete documentation is available in the [`docs/`](./docs/) folder:**
+
+- **[Workflows](./docs/workflows/)** - All workflow implementations (Basic, LangChain, MCP)
+- **[Integrations](./docs/integrations/)** - API integrations (Reddit, LinkedIn, Canva, Azure OpenAI)
+- **[Configuration](./docs/configuration/)** - Environment setup and configuration guides
+- **[Development](./docs/development/)** - API reference, testing, and deployment guides
+- **[Examples](./docs/examples/)** - Usage examples and custom configurations
+
+## 🚀 Workflow Implementation
+
+TrendBolt now focuses on **LangChain-powered AI orchestration** with MCP server integration:
+
+### **1. [LangChain Workflow](./docs/workflows/langchain-workflow.md)**
+- **AI-powered orchestration** with intelligent decision making
+- **Natural language control** and error recovery
+- **Advanced state management** and retry logic
+- **Enhanced Canva polling** with URL validation
+- **Azure OpenAI integration** for content generation
+
+### **2. [MCP Server Tools](./docs/workflows/mcp-tools.md)**
+- **Model Context Protocol** integration for MCP clients
+- **Tool-based interface** with resources and prompts
+- **Compatible with Claude Desktop** and other MCP clients
+- **14 available tools** including LangChain workflows
+
+## 🛠️ Available Tools
 
 ### **Resources**
 - **`trendbolt://trending-topics`** - Current trending topics from Reddit
@@ -43,42 +63,32 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -e .[dev]
 ```
 
-## ⚙️ Configuration
+## ⚙️ Quick Setup
 
-Create a `.env` file in the project root:
+1. **Environment Setup**: Follow the [Environment Setup Guide](./docs/configuration/environment-setup.md)
+2. **LangChain Workflow**: Use the [LangChain Workflow](./docs/workflows/langchain-workflow.md) for AI-powered automation
+3. **MCP Integration**: Configure [MCP Server](./docs/workflows/mcp-tools.md) for Claude Desktop integration
+4. **Configure Integrations**: Set up [Reddit](./docs/integrations/reddit.md), [LinkedIn](./docs/integrations/linkedin.md), [Canva](./docs/integrations/canva.md), and [Azure OpenAI](./docs/integrations/azure-openai.md)
 
+### **Essential Environment Variables**
 ```env
-# Reddit API
+# Required
 REDDIT_CLIENT_ID=your_reddit_client_id
 REDDIT_CLIENT_SECRET=your_reddit_client_secret
-REDDIT_USER_AGENT=TrendBolt/1.0 by your_username
-
-# LLM (choose one)
-# Azure OpenAI (preferred)
 AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
 AZURE_OPENAI_API_KEY=your_azure_openai_key
 AZURE_OPENAI_DEPLOYMENT=gpt-4o
 
-# OpenAI (fallback)
-# OPENAI_API_KEY=your_openai_key
+# For design creation
+CANVA_ACCESS_TOKEN=your_canva_access_token
+CANVA_BRAND_TEMPLATE_ID=your_brand_template_id
 
-# Canva Connect (optional)
-CANVA_API_CLIENT_ID=your_canva_client_id
-CANVA_API_CLIENT_SECRET=your_canva_client_secret
-CANVA_REDIRECT_URI=https://your-domain.com/callback
-CANVA_SCOPES=design:content:read export:read
-
-# Facebook (optional)
-FACEBOOK_APP_ID=your_facebook_app_id
-FACEBOOK_APP_SECRET=your_facebook_app_secret
-FACEBOOK_PAGE_ID=your_facebook_page_id
-FACEBOOK_PAGE_ACCESS_TOKEN=your_page_access_token
-
-# Azure Blob Storage (optional)
-AZURE_STORAGE_ACCOUNT=your_storage_account
-AZURE_STORAGE_CONTAINER=posts
-AZURE_STORAGE_CONNECTION_STRING=your_connection_string
+# For LinkedIn publishing
+LINKEDIN_ACCESS_TOKEN=your_linkedin_access_token
+LINKEDIN_PAGE_ID=your_linkedin_page_id
 ```
+
+**📖 Complete setup instructions:** [Environment Setup Guide](./docs/configuration/environment-setup.md)
 
 ## 🚀 Usage
 
