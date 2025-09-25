@@ -550,9 +550,17 @@ class TrendBoltLangChainAgent:
                 config={"configurable": {"thread_id": f"simple_{datetime.now().timestamp()}"}}
             )
             
+            # Convert messages to serializable format
+            serializable_messages = []
+            for msg in result.get("messages", []):
+                serializable_messages.append({
+                    "type": msg.__class__.__name__,
+                    "content": msg.content
+                })
+            
             return {
                 "success": True,
-                "messages": result.get("messages", []),
+                "messages": serializable_messages,
                 "response": result["messages"][-1].content if result.get("messages") else "No response"
             }
             
