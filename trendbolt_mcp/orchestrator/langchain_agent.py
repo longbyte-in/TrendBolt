@@ -184,7 +184,7 @@ class TrendBoltLangChainAgent:
             subreddits: str = "technology,programming,artificial", 
             strategy: str = "hot", 
             limit: int = 10, 
-            min_score: int = 100
+            min_score: int = 5
         ) -> str:
             """Fetch trending posts from Reddit subreddits. Use comma-separated subreddit names."""
             try:
@@ -288,7 +288,7 @@ class TrendBoltLangChainAgent:
                 subreddits=subreddits,
                 strategy="hot",
                 limit=10,
-                min_score=100
+                min_score=5
             )
             
             state["reddit_topics"] = topics
@@ -488,7 +488,7 @@ class TrendBoltLangChainAgent:
         self,
         subreddits: Optional[List[str]] = None,
         strategy: str = "hot",
-        min_score: int = 100
+        min_score: int = 5
     ) -> Dict[str, Any]:
         """
         Execute the complete TrendBolt workflow.

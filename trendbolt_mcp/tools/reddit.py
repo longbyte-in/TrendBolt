@@ -119,7 +119,7 @@ async def get_trending(
     results: list[dict] = []
     for sub in subreddits:
         try:
-            posts = client.fetch(sub, strategy, limit, time_filter)
+            posts = await client.fetch(sub, strategy, limit, time_filter)
             async for post in posts:
                 shaped = _shape_post(post)
                 if shaped["score"] >= min_score:
