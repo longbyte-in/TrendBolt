@@ -19,12 +19,10 @@ class Settings(BaseSettings):
     reddit_client_secret: str
     reddit_user_agent: str = "TrendBolt/1.0"
 
-    # LLM (Azure OpenAI preferred, OpenAI fallback)
+    # LLM (Azure OpenAI only)
     azure_openai_endpoint: str | None = None
     azure_openai_api_key: str | None = None
     azure_openai_deployment: str | None = None
-    azure_openai_api_version: str | None = "2024-06-01"
-    openai_api_key: str | None = None
 
     # Canva Connect (access token + default brand template)
     canva_access_token: str | None = None
@@ -33,16 +31,8 @@ class Settings(BaseSettings):
     # Azure Blob Storage removed; images posted directly to LinkedIn
 
     # LinkedIn
-    linkedin_client_id: str | None = None
-    linkedin_client_secret: str | None = None
     linkedin_page_id: str | None = None
     linkedin_access_token: str | None = None
-
-    # App options
-    log_level: str = "INFO"
-    subreddits: List[str] = Field(default_factory=lambda: ["technology"])  # comma-separated in .env optional
-    min_score: int = 200
-    template_id: str = "trendbolt_template_default"
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -55,8 +45,6 @@ class Settings(BaseSettings):
     def llm_provider(self) -> str:
         if self.azure_openai_endpoint and self.azure_openai_api_key and self.azure_openai_deployment:
             return "azure_openai"
-        if self.openai_api_key:
-            return "openai"
         return "none"
 
 
