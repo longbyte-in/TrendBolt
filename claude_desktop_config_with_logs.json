@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "trendbolt": {
+      "command": "/Users/ikan/Projects/TrendBolt/venv/bin/python",
+      "args": ["/Users/ikan/Projects/TrendBolt/run_server_with_logs.py"],
+      "cwd": "/Users/ikan/Projects/TrendBolt",
+      "env": {
+        "PYTHONPATH": "/Users/ikan/Projects/TrendBolt",
+        "REDDIT_CLIENT_ID": "LNGBg0R1553NllPePFcuPA",
+        "REDDIT_CLIENT_SECRET": "sxOALavCAsNzG1Sk_xCpwAqoBV94aw",
+        "REDDIT_USER_AGENT": "TrendBolt/1.0 by u/Tiny_Category905",
+        "AZURE_OPENAI_ENDPOINT": "https://hi-mf9j9smo-eastus2.cognitiveservices.azure.com/",
+        "AZURE_OPENAI_API_KEY": "4NCBtP2snQQLn8cFP0vGFYYcnrBMYLaHqzpqCZUk9nU3uUaMp2diJQQJ99BIACHYHv6XJ3w3AAAAACOGb2my",
+        "AZURE_OPENAI_DEPLOYMENT": "gpt-4o",
+        "CANVA_ACCESS_TOKEN": "eyJraWQiOiIyMzY4ZjRhYi00N2ZiLTQwN2MtYjM5Ni00NzgxODcwMjZkN2UiLCJhbGciOiJSUzI1NiJ9.eyJqdGkiOiJ6aDV2Tk9lczFsdGJTMTRUN09SMU9BIiwiY2xpZW50X2lkIjoiT0MtQVpBVXhJWUlJTmtCIiwiYXVkIjoiaHR0cHM6Ly93d3cuY2FudmEuY29tIiwiaWF0IjoxNzU4NzM3NjQ1LCJuYmYiOjE3NTg3Mzc2NDUsImV4cCI6MTc1ODc1MjA0NSwic3ViIjoib1VYVVFIcERLY3ZVOUFncUxfLWcxcyIsImJyYW5kIjoib0JYVVFacUtrNS1yVVQ3VUN5TnBWQSIsIm9yZ2FuaXphdGlvbiI6bnVsbCwic2NvcGVzIjpbImFzc2V0OnJlYWQiLCJhc3NldDp3cml0ZSIsImJyYW5kdGVtcGxhdGU6Y29udGVudDpyZWFkIiwiYnJhbmR0ZW1wbGF0ZTptZXRhOnJlYWQiLCJjb21tZW50OnJlYWQiLCJjb21tZW50OndyaXRlIiwiZGVzaWduOmNvbnRlbnQ6cmVhZCIsImRlc2lnbjpjb250ZW50OndyaXRlIiwiZGVzaWduOm1ldGE6cmVhZCIsImRlc2lnbjpwZXJtaXNzaW9uOnJlYWQiLCJkZXNpZ246cGVybWlzc2lvbjp3cml0ZSIsImZvbGRlcjpwZXJtaXNzaW9uOnJlYWQiLCJmb2xkZXI6cGVybWlzc2lvbjp3cml0ZSIsImZvbGRlcjpyZWFkIiwiZm9sZGVyOndyaXRlIiwicHJvZmlsZTpyZWFkIl0sImJ1bmRsZXMiOltdLCJjb2RlX2lkIjoiRzNqY0liZngxa210bWVPbjc5VEUzQSIsImFjdF9hcyI6InUiLCJhY3giOiJ2MFVJcHFhRUY2aDh6NDlUMmhFLTdqc01nbTJ5TnNzaVpFNHBycjRaVlVEbzAzVlVuWTNvc0JWWndLYi1MeWRMejdrcjdkd3ppZFJtVUtNazlRakoya0l0cWNDRGhWN3JWaXlGcDJfN1c5bjRTUEZ0YzZrTk9QYWg5dDN5bjM0SDRYdFJXUSJ9.NEj5J__EIaI4rVpVJ8sHqVkTZkPUh0V_Gz6lWcmYNr9MeEHQ8zCR1q3DJr8JANIIUYg0TT9P7F3iGRYbYDBLI6o6_OIyn7ry9JlQfjyU-X2VYjC63V0iYAH6AdvSIKA4Fz5o2rFddn1cd-ax6DuXwHTQq3uC_-wW5JuDcRkiDyHzB3AiV5GYf0gsErl2Alr9uN7O1JIAq_s4V9NN8muDwD5zvc5y2fzXOmJOjmlZeQZa4wzBltJNUDzYu7eRC8dQ-BPG5KoMS5Ix6rPdchuZxIvdEviaNO9nCg1AH5xyu0ECCrv2poIbcfzeRxVCvXL5eS8CMxElDKge8aHGMhvldQ",
+        "CANVA_BRAND_TEMPLATE_ID": "EAGyqiKzRsE",
+        "LINKEDIN_PAGE_ID": "105929262",
+        "LINKEDIN_ACCESS_TOKEN": "AQXwZGZMpu9oVKZhcdLJpIN7PVI67NqyDECj1aHlN5BnfE7V7GP2jehtxn9P263ImT0g6j7YdXXy3KA45MW7h0u2vC503B8iugI-zmMF3kMtsOxkUMUexZy9FuYuJF75XuWzLKNzLiUec_0Bmb3kPylbMhgd8L3jxlcor1L-YW63GdlAkMugaS0XzsmF5ZH0HdO2vXYV1DZQZ_B_6DZi0xxIW8EBOGjIuYLqXrZjLBgrtLJX2j4LZfu5IM1_SIHbQx5upSeYP_rELuwLrqvhjiPjmZ6Vgx9V2qVTjYLHJIxDhwFyTWllnRNtjQm2X-c3J8EUWDEhokUBGwxCtjynU7dxuMWrSw",
+        "PYTHONUNBUFFERED": "1",
+        "TRENDBOLT_LOG_LEVEL": "INFO",
+        "TRENDBOLT_LOG_FILE": "/Users/ikan/Projects/TrendBolt/trendbolt.log"
+      }
+    }
+  }
+}
