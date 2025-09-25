@@ -21,7 +21,7 @@ import logging
 from typing import Any, Dict, List, Optional, TypedDict, Annotated
 from datetime import datetime
 
-from langchain_core.tools import Tool
+from langchain_core.tools import Tool, tool
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
@@ -111,13 +111,14 @@ class TrendBoltLangChainAgent:
             except Exception as e:
                 return json.dumps({"success": False, "error": str(e)})
         
+        @tool
         def content_generation_tool(
             topic_title: str,
             topic_url: str = "",
             brand_voice: str = "engaging and informative",
             cta: str = "Follow TrendBolt"
         ) -> str:
-            """Generate social media content from a topic."""
+            """Generate social media content from a topic title and URL."""
             try:
                 topic = {"title": topic_title, "url": topic_url}
                 brand = {"voice": brand_voice, "cta": cta}
@@ -126,12 +127,13 @@ class TrendBoltLangChainAgent:
             except Exception as e:
                 return json.dumps({"success": False, "error": str(e)})
         
+        @tool
         def canva_create_design_tool(
             title: str,
             description: str,
             image_url: str = ""
         ) -> str:
-            """Create a Canva design job."""
+            """Create a Canva design job with title, description, and optional image URL."""
             try:
                 # Prepare autofill data
                 data = {
@@ -152,8 +154,9 @@ class TrendBoltLangChainAgent:
             except Exception as e:
                 return json.dumps({"success": False, "error": str(e)})
         
+        @tool
         def canva_get_design_tool(job_id: str) -> str:
-            """Get Canva design job status and result."""
+            """Get Canva design job status and result by job ID."""
             try:
                 status = get_autofill_job(job_id)
                 return json.dumps({"success": True, "status": status})
@@ -176,46 +179,65 @@ class TrendBoltLangChainAgent:
                 return json.dumps({"success": False, "error": str(e)})
         
         # Convert async functions to sync for LangChain compatibility
-        def sync_reddit_trending(**kwargs):
-            return asyncio.run(reddit_trending_tool(**kwargs))
+        @tool
+        def sync_reddit_trending(
+            subreddits: str = "technology,programming,artificial", 
+            strategy: str = "hot", 
+            limit: int = 10, 
+            min_score: int = 100
+        ) -> str:
+            """Fetch trending posts from Reddit subreddits. Use comma-separated subreddit names."""
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # If we're in an async context, create a new task
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = executor.submit(asyncio.run, reddit_trending_tool(subreddits=subreddits, strategy=strategy, limit=limit, min_score=min_score))
+                        return future.result()
+                else:
+                    return asyncio.run(reddit_trending_tool(subreddits=subreddits, strategy=strategy, limit=limit, min_score=min_score))
+            except RuntimeError:
+                # Fallback: run in new event loop
+                return asyncio.run(reddit_trending_tool(subreddits=subreddits, strategy=strategy, limit=limit, min_score=min_score))
         
-        def sync_reddit_post(**kwargs):
-            return asyncio.run(reddit_post_tool(**kwargs))
+        @tool
+        def sync_reddit_post(post_id: str) -> str:
+            """Fetch a specific Reddit post by ID (e.g., t3_1ndjq1c)."""
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = executor.submit(asyncio.run, reddit_post_tool(post_id=post_id))
+                        return future.result()
+                else:
+                    return asyncio.run(reddit_post_tool(post_id=post_id))
+            except RuntimeError:
+                return asyncio.run(reddit_post_tool(post_id=post_id))
         
-        def sync_linkedin_post(**kwargs):
-            return asyncio.run(linkedin_post_tool(**kwargs))
+        @tool
+        def sync_linkedin_post(text: str, image_url: str = "") -> str:
+            """Create a LinkedIn post with text and optional image URL."""
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = executor.submit(asyncio.run, linkedin_post_tool(text=text, image_url=image_url))
+                        return future.result()
+                else:
+                    return asyncio.run(linkedin_post_tool(text=text, image_url=image_url))
+            except RuntimeError:
+                return asyncio.run(linkedin_post_tool(text=text, image_url=image_url))
         
         self.tools = [
-            Tool(
-                name="reddit_trending",
-                description="Fetch trending posts from Reddit subreddits. Use comma-separated subreddit names.",
-                func=sync_reddit_trending,
-            ),
-            Tool(
-                name="reddit_post",
-                description="Fetch a specific Reddit post by ID (e.g., t3_1ndjq1c).",
-                func=sync_reddit_post,
-            ),
-            Tool(
-                name="generate_content",
-                description="Generate social media content from a topic title and URL.",
-                func=content_generation_tool,
-            ),
-            Tool(
-                name="canva_create_design",
-                description="Create a Canva design job with title, description, and optional image URL.",
-                func=canva_create_design_tool,
-            ),
-            Tool(
-                name="canva_get_design",
-                description="Get Canva design job status and result by job ID.",
-                func=canva_get_design_tool,
-            ),
-            Tool(
-                name="post_to_linkedin",
-                description="Create a LinkedIn post with text and optional image URL.",
-                func=sync_linkedin_post,
-            ),
+            sync_reddit_trending,
+            sync_reddit_post,
+            content_generation_tool,
+            canva_create_design_tool,
+            canva_get_design_tool,
+            sync_linkedin_post,
         ]
     
     def _build_workflow(self):
