@@ -237,13 +237,21 @@ def create_autofill_job_from_values(
         image_fields: Optional mapping of field names that should be treated as images
         timeout_seconds: Request timeout
         client: Optional HTTP client
+    
+    Returns:
+        Dictionary with success status and job data: {"success": True, "job": {...}}
     """
-    data = build_autofill_data(values=values, field_map=field_map, image_fields=image_fields)
-    return create_autofill_job(
-        data=data,
-        timeout_seconds=timeout_seconds,
-        client=client,
-    )
+    try:
+        data = build_autofill_data(values=values, field_map=field_map, image_fields=image_fields)
+        result = create_autofill_job(
+            data=data,
+            timeout_seconds=timeout_seconds,
+            client=client,
+        )
+        # The Canva API returns {"job": {...}}, so we need to extract the inner job
+        return {"success": True, "job": result.get("job", result)}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.5, max=4), retry=retry_if_exception_type(httpx.HTTPError))
