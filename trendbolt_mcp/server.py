@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import sys
 from typing import Any, Dict, List, Optional
 from pathlib import Path
 
@@ -73,6 +74,10 @@ async def list_tools() -> List[Tool]:
 @server.call_tool()
 async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
     """Handle tool calls for external users."""
+    # Log to stderr to avoid interfering with MCP protocol
+    print(f"[TRENDBOLT] Tool called: {name}", file=sys.stderr)
+    print(f"[TRENDBOLT] Arguments: {arguments}", file=sys.stderr)
+    
     try:
         agent = TrendBoltLangChainAgent()
         
@@ -81,7 +86,7 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
             query = arguments["query"]
             subreddits = arguments.get("subreddits")
             strategy = arguments.get("strategy", "hot")
-            min_score = arguments.get("min_score", 100)
+            min_score = arguments.get("min_score", 1)  # Use more generic default
             
             # Enhance query with parameters if provided
             enhanced_query = query
@@ -89,8 +94,11 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
                 enhanced_query += f" Focus on these subreddits: {', '.join(subreddits)}"
             if strategy != "hot":
                 enhanced_query += f" Use '{strategy}' strategy for Reddit search"
-            if min_score != 100:
+            if min_score != 1:
                 enhanced_query += f" Only consider posts with score {min_score} or higher"
+            
+            print(f"[TRENDBOLT] Enhanced query: {enhanced_query}", file=sys.stderr)
+            print(f"[TRENDBOLT] Executing pipeline...", file=sys.stderr)
             
             # Execute with the agent
             result = await agent.execute_simple_pipeline(
@@ -98,13 +106,17 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
                 subreddits=subreddits
             )
             
+            print(f"[TRENDBOLT] Pipeline completed. Success: {result.get('success', False)}", file=sys.stderr)
+            
         else:
             result = {"error": f"Unknown tool: {name}"}
         
         return [TextContent(type="text", text=json.dumps(result, indent=2))]
         
     except Exception as e:
-        logger.error(f"Tool {name} failed: {e}")
+        print(f"[TRENDBOLT] ERROR: Tool {name} failed: {e}", file=sys.stderr)
+        import traceback
+        print(f"[TRENDBOLT] ERROR: {traceback.format_exc()}", file=sys.stderr)
         error_result = {
             "error": str(e),
             "tool": name,
