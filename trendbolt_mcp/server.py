@@ -61,7 +61,7 @@ async def list_tools() -> List[Tool]:
                     },
                     "min_score": {
                         "type": "integer",
-                        "description": "Optional: minimum Reddit post score threshold (default: 100)"
+                        "description": "Optional: minimum Reddit post score threshold (default: 5)"
                     }
                 },
                 "required": ["query"]
@@ -246,7 +246,7 @@ Example usage:
   "query": "Find trending {topic} topics and create a {tone} {platform} post with visual design",
   "subreddits": ["technology", "ai"],
   "strategy": "hot",
-  "min_score": 200
+  "min_score": 5
 }}
 ```"""
                 )

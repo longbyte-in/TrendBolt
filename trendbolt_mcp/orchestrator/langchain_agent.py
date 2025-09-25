@@ -184,7 +184,7 @@ class TrendBoltLangChainAgent:
             subreddits: str = "technology,programming,artificial", 
             strategy: str = "hot", 
             limit: int = 10, 
-            min_score: int = 5
+            min_score: int = 1
         ) -> str:
             """Fetch trending posts from Reddit subreddits. Use comma-separated subreddit names."""
             try:
@@ -288,7 +288,7 @@ class TrendBoltLangChainAgent:
                 subreddits=subreddits,
                 strategy="hot",
                 limit=10,
-                min_score=5
+                min_score=1
             )
             
             state["reddit_topics"] = topics
@@ -488,7 +488,7 @@ class TrendBoltLangChainAgent:
         self,
         subreddits: Optional[List[str]] = None,
         strategy: str = "hot",
-        min_score: int = 5
+        min_score: int = 1
     ) -> Dict[str, Any]:
         """
         Execute the complete TrendBolt workflow.
@@ -496,7 +496,7 @@ class TrendBoltLangChainAgent:
         Args:
             subreddits: List of subreddits to search (default: ["technology", "programming"])
             strategy: Reddit search strategy ("hot", "top", "new")
-            min_score: Minimum score threshold for posts
+            min_score: Minimum score threshold for posts (default: 1 for maximum results)
             
         Returns:
             Dictionary containing workflow results and status
