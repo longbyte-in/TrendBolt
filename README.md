@@ -14,20 +14,14 @@ A Model Context Protocol (MCP) server for automated social media content creatio
 
 ## 🚀 Workflow Implementation
 
-TrendBolt now focuses on **LangChain-powered AI orchestration** with MCP server integration:
+TrendBolt now features a **single-tool AI-powered interface** for maximum simplicity and power:
 
-### **1. [LangChain Workflow](./docs/workflows/langchain-workflow.md)**
+### **Single Tool: `trendbolt`**
+- **Natural language control** - Describe what you want in plain English
 - **AI-powered orchestration** with intelligent decision making
-- **Natural language control** and error recovery
-- **Advanced state management** and retry logic
-- **Enhanced Canva polling** with URL validation
-- **Azure OpenAI integration** for content generation
-
-### **2. [MCP Server Tools](./docs/workflows/mcp-tools.md)**
-- **Model Context Protocol** integration for MCP clients
-- **Tool-based interface** with resources and prompts
-- **Compatible with Claude Desktop** and other MCP clients
-- **14 available tools** including LangChain workflows
+- **Complete automation** - Reddit → LLM → Canva → LinkedIn
+- **Flexible parameters** - Optional subreddits, strategy, and scoring
+- **Error recovery** and retry logic built-in
 
 ## 🛠️ Available Tools
 
@@ -117,78 +111,36 @@ Connect to the server using any MCP-compatible client (Claude Desktop, etc.):
 }
 ```
 
-### **Tool Examples**
+### **Single Tool Usage**
 
-#### **Get Trending Reddit Posts**
+#### **Natural Language Control**
 ```json
 {
-  "name": "reddit_get_trending",
+  "name": "trendbolt",
   "arguments": {
-    "subreddits": ["technology", "worldnews"],
+    "query": "Find trending AI topics and create a professional LinkedIn post"
+  }
+}
+```
+
+#### **With Optional Parameters**
+```json
+{
+  "name": "trendbolt", 
+  "arguments": {
+    "query": "Create viral content about technology news",
+    "subreddits": ["technology", "ai", "programming"],
     "strategy": "hot",
-    "limit": 5,
     "min_score": 200
   }
 }
 ```
 
-#### **Generate Content**
-```json
-{
-  "name": "llm_generate_content",
-  "arguments": {
-    "topic": {
-      "title": "AI Breakthrough Announced",
-      "url": "https://reddit.com/...",
-      "subreddit": "technology",
-      "score": 1250
-    },
-    "brand": {
-      "cta": "Learn More",
-      "voice": "engaging and informative"
-    }
-  }
-}
-```
-
-#### **Run Complete Pipeline**
-```json
-{
-  "name": "trendbolt_pipeline",
-  "arguments": {
-    "subreddits": ["technology"],
-    "facebook_page_id": "your_page_id",
-    "template_id": "trendbolt_template_default",
-    "min_score": 200
-  }
-}
-```
-
-### **Resource Access**
-
-#### **Get Trending Topics**
-```
-URI: trendbolt://trending-topics
-```
-
-#### **Get Content Templates**
-```
-URI: trendbolt://content-templates
-```
-
-### **Prompt Usage**
-
-#### **Generate Viral Content**
-```json
-{
-  "name": "generate_viral_content",
-  "arguments": {
-    "topic_title": "Amazing AI Breakthrough",
-    "topic_url": "https://reddit.com/...",
-    "brand_voice": "engaging and informative"
-  }
-}
-```
+### **Example Queries**
+- "Find trending AI topics and create a LinkedIn post"
+- "Create viral content about the latest technology news"
+- "Generate professional posts from programming subreddits"
+- "Make engaging content about machine learning breakthroughs"
 
 ## 🏗️ Architecture
 
